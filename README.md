@@ -1,5 +1,6 @@
 ## [EmDroid Tech Zone](https://emdroid.github.io/)
 
+[![Build Status](https://travis-ci.org/emdroid/emdroid.github.io.svg?branch=master)](https://travis-ci.org/emdroid/emdroid.github.io)
 ![Powered by Jekyll](https://img.shields.io/badge/powered_by-Jekyll-blue.svg)
 ![Jekyll Version](https://img.shields.io/gem/v/jekyll.svg)
 
