@@ -94,7 +94,7 @@ analytics:
 # Site Author
 author:
   name             : "Emil Maskovsky"
-  avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
+  avatar           : "/assets/images/bio-photo.png"
   bio              : "Copy-pasting code around since 1992"
   location         : "Frankfurt, DE"
   email            :
