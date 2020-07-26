@@ -1,7 +1,7 @@
 ---
-layout: page
 title: Terms of use
 permalink: /terms-of-use/
+toc: true
 ---
 
 By accessing and using this website you accept following terms and conditions.
