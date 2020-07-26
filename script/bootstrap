@@ -3,4 +3,4 @@
 set -e
 
 gem install bundler
-bundle update
+bundle update --gemfile=Gemfile.dev
