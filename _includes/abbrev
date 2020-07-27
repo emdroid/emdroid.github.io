@@ -1,5 +1,8 @@
 {% if include.domain == "computers" %}
 
+*[HW]: The Hardware
+*[SW]: The Software
+
 *[CPU]: The main processor ("Central Processing Unit")
 *[C]: Number of CPU cores
 *[HT]: Number of CPU threads
@@ -44,6 +47,19 @@
 *[DAS]: Direct Attached Storage
 *[NAS]: Network Attached Storage
 *[SAN]: Storage Area Network
+
+*[OS]: Operating System
+*[LTS]: Long Term Support
+*[GUI]: Graphical User Interface
+
+*[SSH]: Secure SHell network communication protocol
+
+*[Ext]: Standard Linux File System
+*[XFS]: Modern Linux Journaling File System
+*[CoW]: Copy on Write
+*[BtrFS]: Linux CoW File System
+*[ZFS]: Sun Microsystems File System (initially Solaris-only)
+*[ZoL]: ZFS on Linux
 
 *[VM]: Virtual Machine
 
