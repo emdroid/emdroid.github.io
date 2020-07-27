@@ -1,0 +1,3 @@
+<div class="notice--{{ include.level }}">
+{{ notice_contents | markdownify }}
+</div>
