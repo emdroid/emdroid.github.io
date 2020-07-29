@@ -293,3 +293,6 @@ defaults:
     values:
       layout: single
       author_profile: true
+
+after_footer_scripts:
+  - /assets/js/links.js
