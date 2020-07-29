@@ -58,3 +58,26 @@ table {
 .box-bottom {
   vertical-align: bottom;
 }
+
+
+// example from https://olivermak.es/2014/10/design-better-responsive-code/
+
+.footnote {
+  border: solid 1px;
+  border-radius: .125em;
+  font-weight: 500;
+  margin-right: .125em;
+  padding: 0 .25em;
+}
+
+.footnote {
+  background-color: rgba(54, 118, 161, 0.2);
+  border-color: #3676a1;
+  color: #3676a1;
+}
+
+.footnote:hover, .footnote:focus {
+  background-color: rgba(171, 51, 43, 0.2);
+  border-color: #ab332b;
+  color: #ab332b;
+}
