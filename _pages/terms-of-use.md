@@ -12,14 +12,14 @@ site now.
 
 Use of the full articles on another sites (publishing, copying) without the
 author’s explicit authorization is not allowed. But the articles can be freely
-linked instead. [^1]
+linked instead [^1].
 
 ## Citations with source link
 
 The citations of the articles are allowed, but it must be clearly stated that it
 is a citation and formatted appropriately (by different text formatting and/or
 quotes used for citations normally), and the original page (the source of the
-citation) must be linked along with the citation. [^1]
+citation) must be linked along with the citation [^1].
 
 ## Disclaimer
 
