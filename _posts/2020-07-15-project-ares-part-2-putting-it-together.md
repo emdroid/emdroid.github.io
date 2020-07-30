@@ -3,6 +3,8 @@ title: "Project Ares: Part II – Putting it together"
 header:
   teaser: /assets/images/posts/nas-ares/2/dsc00756.jpg
 toc: true
+sidebar:
+  nav: "fs-ares"
 categories:
   - Hardware
   - Storage

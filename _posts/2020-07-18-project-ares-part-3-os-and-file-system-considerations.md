@@ -3,6 +3,8 @@ title: "Project Ares: Part III - OS and file system considerations"
 header:
   teaser: /assets/images/posts/nas-ares/3/nas-os.jpg
 toc: true
+sidebar:
+  nav: "fs-ares"
 categories:
   - Hardware
   - Storage

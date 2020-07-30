@@ -3,6 +3,8 @@ title: "Project Ares: Part I – Choosing the hardware"
 header:
   teaser: /assets/images/posts/nas-ares/1/cs381.jpg
 toc: true
+sidebar:
+  nav: "fs-ares"
 categories:
   - Hardware
   - Storage

@@ -10,3 +10,15 @@ main:
   #   url: /sitemap/
   - title: "Terms of use"
     url: /terms-of-use/
+
+
+# Project Ares navigation links
+fs-ares:
+  - title: "Project Ares"
+    children:
+      - title: "Part I: Choosing the hardware"
+        url  : /hardware/storage/project-ares-part-1-choosing-the-hardware/
+      - title: "Part II: Putting it together"
+        url  : /hardware/storage/project-ares-part-2-putting-it-together/
+      - title: "Part III: OS and file system"
+        url  : /hardware/storage/project-ares-part-3-os-and-file-system-considerations/
