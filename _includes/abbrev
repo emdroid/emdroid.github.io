@@ -28,6 +28,15 @@
 *[DVD]: Digital Versatile Disk
 *[BR]: Blu-Ray Disk
 
+*[USB]: Computer connector interface ("Universal Serial Bus")
+
+*[OHCI]: USB controller standard ("Open Host Controller Interface")
+*[UHCI]: USB controller standard ("Universal Host Controller Interface")
+*[EHCI]: USB 2.0 high speed controller standard ("Enhanced Host Controller Interface")
+*[xHCI]: USB 3.0+ controller standard ("Extensible Host Controller Interface")
+*[VHCI]: Virtualized USB controller standard ("Virtual Host Controller Interface")
+*[AHCI]: Serial-ARA controller standard ("Advanced Host Controller Interface")
+
 *[MB]: Motherboard
 *[ATX]: Computer form factor ("Advanced Technology eXtended")
 *[ITX]: Computer form factor ("Information Technology eXtended")
@@ -37,6 +46,16 @@
 
 *[LAN]: Local Area Network
 *[NIC]: Network card ("Network Interface Controller")
+
+*[TCP]: Network transport protocol ("Transmission Control Protocol")
+*[UDP]: Network transport protocol ("User Datagram Protocol")
+*[IP]: Network transport protocol ("Internet Protocol")
+*[DHCP]: Network management protocol ("Dynamic Host Configuration Protocol")
+*[DNS]: Hierarchical computer naming system ("Domain Name System")
+*[HTTP]: Network application protocol ("Hypertext Transfer Protocol")
+*[HTTPS]: Network application protocol ("Hypertext Transfer Protocol Secure")
+*[FTP]: Network application protocol ("File Transfer Protocol")
+*[WINS]: Network name resolution protocol ("Windows Internet Naming Service")
 
 *[PWM]: Pulse-Width Modulation
 *[DC]: Direct Current
