@@ -1,13 +1,13 @@
 ---
 title: "Project Ares: Part III - OS and file system considerations"
 header:
-  teaser: /assets/images/posts/nas-ares/3/nas-os.jpg
+  teaser: /assets/images/posts/nas-ares/nas-os.jpg
 toc: true
 sidebar:
   nav: "fs-ares"
 categories:
-  - Hardware
-  - Storage
+  - Operating Systems
+  - Linux
 tags:
   - nas
   - server
@@ -27,9 +27,10 @@ tags:
   - btrfs
   - lvm
   - luks
+  - raid
 ---
 
-![NAS OS](/assets/images/posts/nas-ares/3/nas-os.jpg){: .align-center .img-large}
+![NAS OS](/assets/images/posts/nas-ares/nas-os.jpg){: .align-center .img-large}
 
 Sharing the experience of building a home NAS/VM server.
 
@@ -893,6 +894,9 @@ It has some performance implications as well - the ZFS-level RAID would be able 
 ## 6. Next steps
 
 Stay tuned for the next part, where I will get into the details of installing the chosen OS, in particular onto an encrypted ZFS root partition in the RAID-1 mode.
+
+[Next: Ubuntu Server on ZFS]({% post_url 2020-08-25-project-ares-part-4-ubuntu-on-zfs-encrypted-root %}){: .btn .btn--info}
+{: .align-right}
 
 ## Resources and references
 

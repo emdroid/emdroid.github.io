@@ -632,4 +632,7 @@ As you can see, even the QNAP i5 16 GB version is approx. 1 000 EUR more expens
 
 In the next part, we'll have a look onto putting the machine together, with pictures and some measurements.
 
+[Next: Putting it together]({% post_url 2020-07-15-project-ares-part-2-putting-it-together %}){: .btn .btn--info}
+{: .align-right}
+
 {% include abbrev domain="computers" %}

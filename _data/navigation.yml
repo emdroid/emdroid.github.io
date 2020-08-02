@@ -21,7 +21,9 @@ fs-ares:
       - title: "Part II: Putting it together"
         url  : /hardware/storage/project-ares-part-2-putting-it-together/
       - title: "Part III: OS and file system"
-        url  : /hardware/storage/project-ares-part-3-os-and-file-system-considerations/
+        url  : /operating systems/linux/project-ares-part-3-os-and-file-system-considerations/
+      - title: "Part IV: Ubuntu Server on ZFS"
+        url  : /operating systems/linux/project-ares-part-4-ubuntu-on-zfs-encrypted-root/
 
 # Solaris 10 navigation links
 sol-10:

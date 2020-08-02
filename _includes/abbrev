@@ -1,7 +1,7 @@
 {% if include.domain == "computers" %}
 
-*[HW]: The Hardware
-*[SW]: The Software
+*[HW]: Hardware
+*[SW]: Software
 
 *[CPU]: The main processor ("Central Processing Unit")
 *[C]: Number of CPU cores
@@ -27,6 +27,7 @@
 *[CD]: Compact Disk
 *[DVD]: Digital Versatile Disk
 *[BR]: Blu-Ray Disk
+*[ISO]: Disc image standard (short for ISO-9660)
 
 *[USB]: Computer connector interface ("Universal Serial Bus")
 

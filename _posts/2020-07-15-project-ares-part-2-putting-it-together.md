@@ -960,4 +960,7 @@ In the next part we'll discuss the operating and file system of the new server, 
 
 {% include gallery caption="The NAS server build gallery" %}
 
+[Next: OS and file system]({% post_url 2020-07-18-project-ares-part-3-os-and-file-system-considerations %}){: .btn .btn--info}
+{: .align-right}
+
 {% include abbrev domain="computers" %}
