@@ -22,3 +22,18 @@ fs-ares:
         url  : /hardware/storage/project-ares-part-2-putting-it-together/
       - title: "Part III: OS and file system"
         url  : /hardware/storage/project-ares-part-3-os-and-file-system-considerations/
+
+# Solaris 10 navigation links
+sol-10:
+  - title: "Article pages"
+    children:
+      - title: "Page 1: Prerequisites"
+        url  : /operating systems/unix/minimal-install-solaris-10-with-sun-studio/
+      - title: "Page 2: System installation"
+        url  : /operating systems/unix/minimal-install-solaris-10-with-sun-studio-2/
+      - title: "Page 3: Post-install setup"
+        url  : /operating systems/unix/minimal-install-solaris-10-with-sun-studio-3/
+      - title: "Page 4: Extra packages"
+        url  : /operating systems/unix/minimal-install-solaris-10-with-sun-studio-4/
+      - title: "Page 5: Extras"
+        url  : /operating systems/unix/minimal-install-solaris-10-with-sun-studio-5/
