@@ -1,0 +1,67 @@
+{% if include.domain == "computers" %}
+
+*[HW]: The Hardware
+*[SW]: The Software
+
+*[CPU]: The main processor ("Central Processing Unit")
+*[C]: Number of CPU cores
+*[HT]: Number of CPU threads
+*[TDP]: Thermal Design Power
+
+*[RAM]: The main memory ("Random-Access Memory")
+*[DRAM]: Dynamic RAM ("Random-Access Memory")
+*[DDR]: Double Data Rate Synchronous Dynamic Random-Access Memory (SDRAM)
+
+*[HDD]: Hard Disk Drive
+*[SSD]: Solid-State Drive
+*[SATA]: Serial ATA interface
+*[SAS]: Serial Attached SCSI ("Small Computer System Interface")
+*[SCSI]: Peripheral devices standard ("Small Computer System Interface")
+*[HBA]: Host Bus Adapter
+*[RAID]: Redundant Array of Independent Disks
+*[NVME]: m.2 SSD form factor ("Non-Volatile Memory (NVM) Express")
+*[NGFF]: m.2 SSD form factor ("Next Generation Form Factor")
+*[WD]: "Western Digital" disk manufacturer
+*[TRIM]: The SSD "garbage collection" support technology
+
+*[CD]: Compact Disk
+*[DVD]: Digital Versatile Disk
+*[BR]: Blu-Ray Disk
+
+*[MB]: Motherboard
+*[ATX]: Computer form factor ("Advanced Technology eXtended")
+*[ITX]: Computer form factor ("Information Technology eXtended")
+*[PCI]: Computer peripheral bus standard ("Peripheral Component Interconnect")
+*[PCIe]: PCI-Express ("Peripheral Component Interconnect")
+*[SFF]: Small Form Factor
+
+*[LAN]: Local Area Network
+*[NIC]: Network card ("Network Interface Controller")
+
+*[PWM]: Pulse-Width Modulation
+*[DC]: Direct Current
+*[RPM]: Revolutions Per Minute
+
+*[PSU]: Power Supply Unit
+*[SFX]: Small Form Factor (SFF) power supply standard
+
+*[DAS]: Direct Attached Storage
+*[NAS]: Network Attached Storage
+*[SAN]: Storage Area Network
+
+*[OS]: Operating System
+*[LTS]: Long Term Support
+*[GUI]: Graphical User Interface
+
+*[SSH]: Secure SHell network communication protocol
+
+*[Ext]: Standard Linux File System
+*[XFS]: Modern Linux Journaling File System
+*[CoW]: Copy on Write
+*[BtrFS]: Linux CoW File System
+*[ZFS]: Sun Microsystems File System (initially Solaris-only)
+*[ZoL]: ZFS on Linux
+
+*[VM]: Virtual Machine
+
+{% endif %}
