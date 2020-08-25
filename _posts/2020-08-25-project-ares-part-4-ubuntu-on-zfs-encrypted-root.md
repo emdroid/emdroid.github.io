@@ -210,7 +210,7 @@ apt upgrade -y
 apt install -y \
     dosfstools mdadm linux-image-generic shim-signed \
     grub-efi-amd64 grub-efi-amd64-signed \
-    zfs-initramfs zsys zfsutils-linux \
+    zfs-initramfs zsys zfs-zed zfsutils-linux \
     vim
 ```
 
@@ -219,7 +219,7 @@ apt install -y \
 ```bash
 apt install -y \
     dosfstools mdadm linux-image-generic grub-pc \
-    zfs-initramfs zsys zfsutils-linux \
+    zfs-initramfs zsys zfs-zed zfsutils-linux \
     vim
 ```
 
@@ -238,9 +238,9 @@ Steps to create and use the Live DVD:
 **a) Prepare the bootable USB with the Live DVD image**:
 
 - use the [Rufus](https://sourceforge.net/projects/rufus.mirror/) or a Linux tool to create the bootable USB from the ISO image (the Ubuntu Desktop DVD)
-- alternatively burn the ISO image onto a DVD-R[W] if using an external DVD drive
+- alternatively burn the ISO image onto a DVD-R[W] if using an internal or external DVD drive
 
-**b) Boot from the USB flash** (or the external DVD drive):
+**b) Boot from the USB flash** (or the DVD drive):
 
 - use the same steps as in the [system installation](#31-installing-the-system) part
 
@@ -326,7 +326,7 @@ sgdisk -p $DISK_2
 
 # remove any existing partitions
 # (note that if there are any LVM volumes currently active, they'd need to be removed first)
-sgdisk -Z $DISK_2
+wipefs --all $DISK_2
 
 # create a new LVM partition for backing up the primary disk
 sgdisk -n1:0:0 -t1:8E00 $DISK_2
@@ -387,7 +387,7 @@ sgdisk -p $DISK
 #   (skip the first EFI / Microsoft 512 MB partition)
 
 # mount the primary volumes
-# (default setup creates just a single $DISK-part2 ext4 partition)
+# (default setup creates just a single $DISK-part5 ext4 partition)
 mount $DISK-part5 /mnt/system/root
 # eventually the boot, home and other volumes, if any
 mount $DISK-part2 /mnt/system/boot
@@ -493,13 +493,14 @@ sudo -i
 - note this installs the packages to the currently running Live DVD, not to the migrated installation
 
 ```bash
-apt install -y zfs-initramfs vim
+apt install -y zfs-initramfs mdadm vim
 
 # stop the ZFS manager for now
 systemctl stop zed
 ```
 
 **d) Set the variables for the disks being used** (if not already done):
+
 - **DISK**: The primary drive
 - **DISK_2**: The secondary backup drive
 - use your disk ids as appropriate
@@ -518,9 +519,10 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 **e) Repartition the primary disk**:
+
 - will be using the `"sgdisk"` command
 - this presumes the disks will use mirroring at the end
-- see note about the swap partition at the end
+- see the swap partition notes and other information below
 
 ```bash
 # list the existing partitions on the primary disk
@@ -531,14 +533,14 @@ sgdisk -p $DISK
 # remove any existing partitions
 # (note that if there are any LVM volumes currently active,
 #  they should be removed first)
-sgdisk -Z $DISK
+wipefs --all $DISK
 
 # UEFI Bios: create the EFI partition
 sgdisk -n1:0:+512M -t1:EF00 $DISK
 
 # Non-UEFI Bios: create the GRUB partition
 # (needed for GPT)
-sgdisk -n1:0:+1M -t1:EF02 $DISK
+sgdisk -n1:0:+512M -t1:EF02 $DISK
 
 # create the ZFS boot partition
 sgdisk -n2:0:+2G -t2:BE00 $DISK
@@ -560,6 +562,7 @@ sgdisk -p $DISK
 
 - the EFI partition is not necessary if the computer is not using the UEFI Bios; most modern PCs have UEFI though  
 (one particular example where UEFI still might not be used are virtual machines)
+- we create the "EFI-like" partition though, as there is a partition needed for the GRUB boot loader (although only approx 1 MB is actually needed, but we are creating an "EFI-like" size to be able to eventually migrate to UEFI Bios if needed)
 - if you have different size drives, you need to make sure that the root partition on the larger drive matches the root partition on the smaller drive, otherwise the RAID-1 could not be created  
 (you can then use the rest or part of the larger drive as a SWAP partition)
 - the **SWAP partition is highly recommended** even if you have a lot of memory [^5]
@@ -597,21 +600,21 @@ mkdir -p /target
 
 # create the root partition LUKS key
 # - using the Base64 encoding to only have printable chars in the key
-mkdir -p luks/init
+mkdir -p /etc/crypt/init
 dd if=/dev/urandom bs=512 skip=4 count=16 | base64 \
-    >luks/init/root.key
+    > /etc/crypt/init/root.key
 
 # setup the root partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d luks/init/root.key $DISK-part3
-cryptsetup luksOpen -d luks/init/root.key $DISK-part3 zroot-1
+    -d /etc/crypt/init/root.key $DISK-part3
+cryptsetup luksOpen -d /etc/crypt/init/root.key $DISK-part3 zroot-1
 ```
 
 {% capture notice_contents %}
 **<a name="key_warn">Warning</a>**:
 
 - do not forget to copy the key out to a safe location (ideally also encrypted disk, password protected zip etc.) e.g. on your desktop PC
-- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by `"cat luks/init/root.key"`
+- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by `"cat /etc/crypt/init/root.key"`
 - it will be needed for eventual recovery etc.
 {% endcapture %}
 
@@ -707,11 +710,15 @@ zpool status rpool
 
 ```bash
 # create the bpool and rpool main datasets
-zfs create -o canmount=off -o mountpoint=none bpool/BOOT
-zfs create -o canmount=off -o mountpoint=none rpool/ROOT
+zfs create \
+    -o canmount=off \
+    -o mountpoint=none \
+    bpool/BOOT
 
-# create the main user dataset
-zfs create -o canmount=off -o mountpoint=none -o setuid=off rpool/USER
+zfs create \
+    -o canmount=off \
+    -o mountpoint=none \
+    rpool/ROOT
 
 # create the Ubuntu-specific boot and root datasets
 zfs create \
@@ -725,6 +732,13 @@ zfs create \
     -o com.ubuntu.zsys:bootfs=yes \
     -o com.ubuntu.zsys:last-used=$(date +%s) \
     rpool/ROOT/ubuntu
+
+# create the main user dataset
+zfs create \
+    -o canmount=off \
+    -o mountpoint=none \
+    -o setuid=off \
+    rpool/USER
 
 # mount the main data sets
 # (the order is important!)
@@ -861,9 +875,9 @@ ls -al /target/home/
 
 ```bash
 # copy the encryption keys
-cp -r luks /target/etc/
+cp -r crypt /target/etc/
 # make it only readable for the root user
-chmod -R go-rwx /target/etc/luks
+chmod -R go-rwx /target/etc/crypt
 ```
 
 **b) Setup the fstab and encryption** [^9]:
@@ -874,7 +888,7 @@ echo "UUID=$(blkid -s UUID -o value $DISK-part1) /boot/efi vfat noauto,umask=007
     >> /target/etc/fstab
 
 # add the root entry to the crypttab
-echo "zroot-1 UUID=$(blkid -s UUID -o value $DISK-part3) /etc/luks/init/root.key luks,discard,initramfs" \
+echo "zroot-1 UUID=$(blkid -s UUID -o value $DISK-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
     >> /target/etc/crypttab
 
 # eventually add the entry for the swap encryption (recommended)
@@ -882,7 +896,7 @@ echo "swap PARTUUID=$(blkid -s PARTUUID -o value $DISK-part4) /dev/urandom swap,
     >> /target/etc/crypttab
 
 # add the encrypted swap entry (if used) to the fstab
-echo "/dev/mapper/swap none swap sw 0 0" \
+echo "/dev/mapper/swap none swap sw,discard 0 0" \
     >> /target/etc/fstab
 
 # setup some basic protection of the encryption keys
@@ -890,10 +904,13 @@ echo "UMASK=0077" \
     >> /target/etc/initramfs-tools/initramfs.conf
 
 # add the key pattern to be included in the initramfs
-echo 'KEYFILE_PATTERN="/etc/luks/init/*.key"' \
+echo 'KEYFILE_PATTERN="/etc/crypt/init/*.key"' \
     >> /target/etc/cryptsetup-initramfs/conf-hook
 # check it has been added properly
 less /target/etc/cryptsetup-initramfs/conf-hook
+
+# disable the resume (hibernation) for now
+echo "RESUME=none" > /target/etc/initramfs-tools/conf.d/resume
 ```
 
 {% capture notice_contents %}
@@ -901,6 +918,11 @@ less /target/etc/cryptsetup-initramfs/conf-hook
 
 - the use of the `"initramfs"` crypttab parameter is a work-around for the cryptsetup lack of ZFS support  
 (ensures that the boot image will contain the root encryption setup)
+- the `"nofail"` and `"x-systemd.device-timeout"` are to ignore eventual error if the partition cannot be mounted (for the RAID-1 configuration)
+- the `"discard"` crypttab parameter is used to allow processing of the TRIM commands:
+  - this is only necessary to do for SSD drives
+  - it is less secure (the trimmed areas can reveal where and how much valid data are there)
+  - but without it the SSD cannot properly handle the free space, which worsens the performance and wear leveling
 {% endcapture %}
 
 {% include notice level="info" %}
@@ -920,6 +942,9 @@ vim /target/etc/fstab
 ```bash
 vim /target/etc/default/grub
 
+# add the line
+GRUB_RECORDFAIL_TIMEOUT=5
+
 # add to the GRUB_CMDLINE_LINUX_DEFAULT options
 # (to allow start from a degraded array, should a failure happen)
 GRUB_CMDLINE_LINUX_DEFAULT="bootdegraded=true init_on_alloc=0"
@@ -936,9 +961,12 @@ mount --rbind /dev     /target/dev
 mount --rbind /dev/pts /target/dev/pts
 mount --rbind /proc    /target/proc
 mount --rbind /sys     /target/sys
+mount --rbind /run     /target/run
 
 # enter the chroot
-chroot /target /usr/bin/env DISK=$DISK bash --login
+chroot /target /usr/bin/env \
+    DISK=$DISK \
+    bash --login
 
 # UEFI Bios only: mount the EFI partition to set it up
 mount /boot/efi
@@ -960,10 +988,11 @@ update-grub
 update-initramfs -c -k all
 # ignore the eventual cryptsetup warnings - should still work
 
-# check if the cryptkeys presented in the initramfs
+# check if the cryptkeys are present in the initramfs
 lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
-# - check the size of cryptroot/crypttab
-# - check for "cryptroot/keyfiles/zroot-1.key"
+# check for:
+# - the "cryptroot/crypttab" size
+# - the "cryptroot/keyfiles/zroot-1.key" file
 ```
 
 **g) Install the GRUB boot loader**:
@@ -998,6 +1027,12 @@ grub-install --target=i386-pc $DISK
 **h) Finalize the ZFS setup**:
 
 ```bash
+# enable the zfs zed service
+# (to auto-mount the ZFS pools properly on startup)
+systemctl enable zfs-zed.service
+systemctl enable zfs.target
+systemctl start zfs-zed.service
+
 # disable the grub fallback service
 systemctl mask grub-initrd-fallback.service
 
@@ -1008,6 +1043,19 @@ touch /etc/zfs/zfs-list.cache/rpool
 
 # create the cacher link
 ln -s /usr/lib/zfs-linux/zed.d/history_event-zfs-list-cacher.sh /etc/zfs/zed.d
+
+# create the cache files
+zed -F &
+
+cat /etc/zfs/zfs-list.cache/bpool
+cat /etc/zfs/zfs-list.cache/rpool
+
+# if either is empty, force a cache update and check again:
+zfs set canmount=noauto bpool/BOOT/ubuntu
+zfs set canmount=noauto rpool/ROOT/ubuntu
+
+fg
+# press Ctrl-C
 
 # update the mountpoints
 sed -Ei "s|/target/?|/|" /etc/zfs/zfs-list.cache/*
@@ -1100,13 +1148,12 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 **e) Decrypt the root partition**:
 
-- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by `"mkdir -p luks/init && vim luks/init/root.key"`
+- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by `"mkdir -p /etc/crypt/init && vim /etc/crypt/init/root.key"`
 
 - then use the key to decrypt the partition
 
 ```bash
-cryptsetup luksOpen -d luks/init/root.key ${DISK}-part3 zroot-1
-cryptsetup luksOpen -d usb.key ${DISK}-part3 zroot-1
+cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK}-part3 zroot-1
 ```
 
 **f) Mound the ZFS volumes**:
@@ -1133,9 +1180,12 @@ mount --rbind /dev     /target/dev
 mount --rbind /dev/pts /target/dev/pts
 mount --rbind /proc    /target/proc
 mount --rbind /sys     /target/sys
+mount --rbind /run     /target/run
 
 # enter the chroot
-chroot /target /usr/bin/env DISK=$DISK bash --login
+chroot /target /usr/bin/env \
+    DISK=$DISK \
+    bash --login
 
 # mount all additional disks
 mount -a
@@ -1160,6 +1210,9 @@ reboot
 ## 6. Next steps
 
 In the next part we will complete the system disk setup (mirroring of the primary drive) and setup the data drives.
+
+[Next: Ubuntu Server on ZFS]({% post_url 2020-08-30-project-ares-part-5-ubuntu-on-zfs-raid %}){: .btn .btn--info}
+{: .align-right}
 
 ## Resources and references
 

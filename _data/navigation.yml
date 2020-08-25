@@ -24,6 +24,8 @@ fs-ares:
         url  : /operating systems/linux/project-ares-part-3-os-and-file-system-considerations/
       - title: "Part IV: Ubuntu Server on ZFS"
         url  : /operating systems/linux/project-ares-part-4-ubuntu-on-zfs-encrypted-root/
+      - title: "Part V: RAID and data drives"
+        url  : /operating systems/linux/project-ares-part-5-ubuntu-on-zfs-raid/
 
 # Solaris 10 navigation links
 sol-10:
