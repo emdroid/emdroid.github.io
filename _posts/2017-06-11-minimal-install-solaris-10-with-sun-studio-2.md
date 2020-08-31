@@ -206,7 +206,7 @@ On the first boot, the machine should start into the text console (as we didn't 
 
 {% include figure image_path="/assets/images/posts/solaris-10/install-9-login.png" alt="Login screen" caption="The initial login screen" %}
 
-The default shell is "_/bin/sh_", you can type "`bash`" to switch to the bash shell (if you installed it).
+The default shell is "_/bin/sh_", you can type `"bash"` to switch to the bash shell (if you installed it).
 
 Note that the **hostname** is reported as "_unknown_", because the _DHCP_ server didn't configure it (but you can see that the IP address has been configured over the _DHCP_).
 We will [set the host name manually]({% post_url 2017-06-11-minimal-install-solaris-10-with-sun-studio-3 %}#37-network-setup) later (alternatively the _DHCP_ server would have to be configured to know which host name it should push for the particular machine).

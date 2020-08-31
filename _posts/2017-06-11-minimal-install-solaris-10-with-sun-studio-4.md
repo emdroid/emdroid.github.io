@@ -86,7 +86,7 @@ We will create the target directory first:
 # chmod 777 /studio-install
 ```
 
-Then transfer the installation file - under Linux by using "`scp`":
+Then transfer the installation file - under Linux by using `"scp"`:
 
 ```
 [username@client]$ scp ~/Download/SolarisStudio12.4-solaris-x86-pkg.tar.bz2 username@sol10-machine:/studio-install/
@@ -120,7 +120,7 @@ See here for the list of available Solaris Studio components and the installatio
 - [Command-Line Options for the Installer, Uninstaller, and install_patches Utility for Oracle Solaris 10 and Linux Platforms](https://docs.oracle.com/cd/E37069_01/html/E37072/gozps.html#OSSIGgiqse)
 - [Components and Package Names in Oracle Solaris Studio](https://docs.oracle.com/cd/E37069_01/html/E37072/gozpl.html)
 
-Note the use of the "`--tempdir`" parameter - the default location is "_/tmp_", however as it is a relatively small partition by default, it might not have enough space required for the Solaris Studio installation.
+Note the use of the `"--tempdir"` parameter - the default location is "_/tmp_", however as it is a relatively small partition by default, it might not have enough space required for the Solaris Studio installation.
 
 Because we installed the system by using the minimal install option and not the recommended "_Developer System Support_" or "_Entire Distribution_" options, the installer will complain about that.
 This can be ignored now, as we explicitly added/installed all the prerequisites of the Sun Studio:
@@ -136,7 +136,7 @@ Next step is to install the required patches (as the other warning message sugge
 # ./install_patches.sh
 ```
 
-Next step is to add the Solaris Studio paths to the environment (alternative is to use the "`--create-symlinks`" for the installer, but for me it didn't work and the non-interactive installer choked on that option).
+Next step is to add the Solaris Studio paths to the environment (alternative is to use the `"--create-symlinks"` for the installer, but for me it didn't work and the non-interactive installer choked on that option).
 
 First we will add the Solaris Studio man path.
 This can be done in the "_/etc/profile_" file, by adding the "_MANPATH_" settings:
@@ -190,7 +190,7 @@ $ CC -V
 CC: Sun C++ 5.13 SunOS_i386 2014/10/20
 ```
 
-The "`man`" path can be tested by:
+The `"man"` path can be tested by:
 
 ```
 $ man codean

@@ -16,7 +16,7 @@ categories:
 It is recommended to add a regular user for the normal work (for security reasons).
 Also, the remote SSH login of the "root" superuser is disabled by default - the "root" user access over SSH can be enabled, but it is disabled for security reasons, so I generally prefer to keep it that way and create the additional "regular" user.
 
-A new user can be added via the "`useradd`" command, and the password set via the "`passwd`":
+A new user can be added via the `"useradd"` command, and the password set via the `"passwd"`:
 
 ```
 # useradd -m -d /export/home/my_username -s /usr/bin/bash my_username
@@ -27,10 +27,10 @@ Re-enter new Password:
 passwd: password successfully changed for my_username
 ```
 
-The "`-m -d`" is to create the home directory and its location.
+The `"-m -d"` is to create the home directory and its location.
 Note that the standard **location of home directories** in Solaris is not "_/home_" as usual in Linux, but "_/export/home_" (see here for details: [Difference between "/export/home" and "/home"](https://unix.stackexchange.com/questions/11685/difference-between-export-home-and-home)).
 
-The user is now created with the Bash as the default shell (you can choose any other shell or not use the "`-s`" parameter to keep the default "_/bin/sh_" shell).
+The user is now created with the Bash as the default shell (you can choose any other shell or not use the `"-s"` parameter to keep the default "_/bin/sh_" shell).
 
 The "_username too long_" warning can be normally ignored (only some special services might require the name to be shorter than 8 chars, but I didn't hit any issues with longer usernames so far).
 
@@ -42,7 +42,7 @@ UX: usermod: root is currently logged in, some changes may not take effect until
  next login.
 ```
 
-To perform administrative tasks when logged as a regular user, the "`su`" command needs to be used to switch to the "_root_" account (Solaris does not provide the "`sudo`" command):
+To perform administrative tasks when logged as a regular user, the `"su"` command needs to be used to switch to the "_root_" account (Solaris does not provide the `"sudo"` command):
 
 ```
 -bash-3.2$ su -
@@ -51,7 +51,7 @@ Oracle Corporation      SunOS 5.10      Generic Patch   January 2005
 -bash-3.2# 
 ```
 
-Note the different prompt strings for the regular user (ending with the "`$`" character) and the administrator account (ending with "`#`").
+Note the different prompt strings for the regular user (ending with the `"$"` character) and the administrator account (ending with `"#"`).
 This is the default, but the prompt strings can be changed.
 
 ### 3.2. SSH access
@@ -59,7 +59,7 @@ This is the default, but the prompt strings can be changed.
 The SSH server should already be running, and you can use the previously created regular user to log in via SSH or Putty (see also here: [SSH password-less login]({% post_url 2017-06-03-ssh-passwordless-login %})).
 If the DHCP was selected during the installation, you will not be able to connect via the hostname, only by the IP address (the setup of the host name is [explained later](#37-network-setup)).
 
-The IP address to connect to can be shown by the "`ifconfig`" command:
+The IP address to connect to can be shown by the `"ifconfig"` command:
 
 ```
 # ifconfig -a
@@ -74,7 +74,7 @@ The SSH access will be also used for transferring the downloaded additional pack
 ### 3.3. Path to the GCC compiler and tools
 
 The GCC compiler and tools are located under "_/usr/sfw_", which is not in the path by default. The path can be added in the "_/etc/profile_", but it is better to add it to the "_/etc/default/login_" file, to be also available for the **non-interactive shells** - this is in particular essential to work within Jenkins build slave (which runs under a non-interactive shell).
-This needs to be done under the "_root_" user ("`su -`"):
+This needs to be done under the "_root_" user (`"su -"`):
 
 ```
 # chmod u+w /etc/default/login
@@ -89,7 +89,7 @@ Find the PATH setting (commented out by default) and change it to (or add):
 PATH=/usr/bin:/bin:/usr/sbin:/usr/sfw/bin:/usr/sfw/i386-sun-solaris2.10/bin
 ```
 
-(the path "_/usr/sbin_" is mostly relevant to the "_root_" superuser, as the regular user can only run few commands present there, for example "`ping`")
+(the path "_/usr/sbin_" is mostly relevant to the "_root_" superuser, as the regular user can only run few commands present there, for example `"ping"`)
 
 At this point, you can add the paths for the Sun Studio and the [CSW packages]({% post_url 2017-06-11-minimal-install-solaris-10-with-sun-studio-5 %}#51-csw-repository) as well, to not have to repeat the setting later:
 
@@ -104,7 +104,7 @@ When done, it is recommended to change the permissions back to read-only:
 ```
 
 For the settings to take effect, logout and login back (or restart the machine).
-Confirm the installation by checking the "`gcc`" (GNU C compiler) and "`g++`" (GNU C++ compiler) commands - under the regular user:
+Confirm the installation by checking the `"gcc"` (GNU C compiler) and `"g++"` (GNU C++ compiler) commands - under the regular user:
 
 ```
 $ which gcc
@@ -123,7 +123,7 @@ Note that the GCC compiler shipped with the system is of a relatively old versio
 
 ### 3.4. Shutting down/rebooting the system
 
-Similar to Linux, the Solaris 10 can be shutdown/rebooted by the "`shutdown`" or "`init`" commands (both can only be run under the "_root_" administrator account, and located under "_/usr/sbin_").
+Similar to Linux, the Solaris 10 can be shutdown/rebooted by the `"shutdown"` or `"init"` commands (both can only be run under the "_root_" administrator account, and located under "_/usr/sbin_").
 
 To shutdown:
 
@@ -148,9 +148,9 @@ The "shutdown" command is the most graceful option, especially if multiple users
 The CD/DVD device needs to be mounted if you e.g. want to install additional packages.
 
 The device names are different to Linux, so you need to know the scheme to be able to mount them.
-All needs to be performed under the "_root_" user, i.e. if logged under a regular user, elevate the rights via "`su -`". The "standard" CD/DVD device name is usually "_c1t0d0_".
+All needs to be performed under the "_root_" user, i.e. if logged under a regular user, elevate the rights via `"su -"`. The "standard" CD/DVD device name is usually "_c1t0d0_".
 
-To mount the CD/DVD device (using "`mkdir`" to create the mount directory if it does not exist yet):
+To mount the CD/DVD device (using `"mkdir"` to create the mount directory if it does not exist yet):
 
 ```
 # mkdir /cdrom
@@ -160,7 +160,7 @@ To mount the CD/DVD device (using "`mkdir`" to create the mount directory if it 
 Note the "_s0_" is added at the end - "_c1t0d0_" is the entire physical device, the "s_n_" is the _n-th_ partition of the device (zero-based index).
 
 If the device above is not found, you'll need to list the devices to find out the correct device name.
-This can be done with the "`iostat`" command:
+This can be done with the `"iostat"` command:
 
 ```
 # iostat -En
@@ -181,7 +181,7 @@ See here for further details: [How to mount the CD-ROM on Solaris 10](https://un
 
 ### 3.6. Boot manager menu
 
-To edit the boot menu, use the "`bootadm`" command to find out the path of the active configuration:
+To edit the boot menu, use the `"bootadm"` command to find out the path of the active configuration:
 
 ```
 # bootadm list-menu
@@ -285,7 +285,7 @@ Add the "_loghost_" at the end of the "_localhost_" line:
 127.0.0.1       localhost loghost
 ```
 
-As you might notice, the file was originally write-protected (needed to "`chmod`" to be able to edit it even under the "_root_" user), so the permission to write should be removed again:
+As you might notice, the file was originally write-protected (needed to `"chmod"` to be able to edit it even under the "_root_" user), so the permission to write should be removed again:
 
 ```
 # chmod u-w /etc/inet/hosts
@@ -296,7 +296,7 @@ The new host name should now be shown, there also should not be the "_loghost_" 
 
 {% include figure image_path="/assets/images/posts/solaris-10/sol10-hostname.png" alt="Hostname complete" caption="Hostname setup complete" %}
 
-The "`hostname`" command should now also show the new host name:
+The `"hostname"` command should now also show the new host name:
 
 ```
 $ hostname
@@ -316,7 +316,7 @@ Still for the WINS resolution to work, the Samba server must be installed and pa
 If you do not need to access the machine from Windows via hostname, then this step can be skiped.
 
 If you did not install the Samba packages during the installation, you can do that manually as well. First, you need to insert and [mount the installation media](#35-mounting-the-cddvd-device).
-Then the required packages can be installed by the "`pkgadd`" command (under the "_root_" user, obviously):
+Then the required packages can be installed by the `"pkgadd"` command (under the "_root_" user, obviously):
 
 ```
 # pkgadd -d /cdrom/Solaris_10/Product SUNWsmbar SUNWsmbac SUNWlibpopt SUNWsmbau SUNWsfman

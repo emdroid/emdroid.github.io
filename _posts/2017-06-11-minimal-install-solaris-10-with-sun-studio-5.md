@@ -16,7 +16,7 @@ categories:
 The [Open Community SoftWare](https://www.opencsw.org/) (OpenCSW) project is an additional repository of software packages for Solaris.
 It provides newer package versions and/or packages which do not exist in Solaris originally (Git, CMake, etc.).
 
-The repository is added as an additional package (needs to be done under the superuser - "`su -`"):
+The repository is added as an additional package (needs to be done under the superuser - `"su -"`):
 
 ```
 # pkgadd -d http://get.opencsw.org/now
@@ -77,7 +77,7 @@ When done, it is recommended to change the permissions back to read-only:
 
 Logout and login back (or restart the machine) for the settings to take effect.
 
-Next initialize the CSW database with the "`-U`" parameter:
+Next initialize the CSW database with the `"-U"` parameter:
 
 ```
 # pkgutil -U
@@ -311,9 +311,9 @@ This is done by using the "_zpool_" command:
 # zpool create -f srv c0d1s0
 ```
 
-In the above, the "_c0d1s0_" is the first partition ("_s0_") of the secondary disk ("_d1_") on the first controller ("_c0_"). The "`-f`" parameter specifies the mount point of the new pool ("_/srv_" in this case).
+In the above, the "_c0d1s0_" is the first partition ("_s0_") of the secondary disk ("_d1_") on the first controller ("_c0_"). The `"-f"` parameter specifies the mount point of the new pool ("_/srv_" in this case).
 
-The successful creation of the pool can be checked by the "`df`" command:
+The successful creation of the pool can be checked by the `"df"` command:
 
 ```
 # df -h

@@ -115,9 +115,9 @@ vectorize.cpp(11) : info C5002: loop not vectorized due to reason '1100'
 This shows that the loop could not be vectorized, along with the reason code.
 All the reason codes are listed here:
 [Vectorizer and Parallelizer Messages](https://msdn.microsoft.com/en-us/library/jj658585.aspx). 
-In this particular case, the reason is the "`if`" control statement inside the loop.
+In this particular case, the reason is the `"if"` control statement inside the loop.
 
-This can be fixed by splitting the loop into two separate loops, avoiding the "`if`" statement:
+This can be fixed by splitting the loop into two separate loops, avoiding the `"if"` statement:
 
 ```cpp
 #include <cstdlib>
@@ -156,9 +156,9 @@ Be prepared however, that if the STL headers are used (e.g. "*iostream*", "*algo
 ### 2.2. GNU C++ compiler
 
 The GCC compiler flags to print out the vectorization diagnostics are "**-ftree-vectorizer-verbose=n**" ("n" = the verbosity level) and/or "**-fopt-info-vec-missed**".
-To actually switch the automatic vectorization on, either the "`-O3`" flag or "`-O2`" with "`-ftree-vectorize`" need to be used.
+To actually switch the automatic vectorization on, either the `"-O3"` flag or `"-O2"` with `"-ftree-vectorize"` need to be used.
 
-In some cases the architecture or support of the particular vector instructions need to be selected, such as: "`-march=native`", "`-match=corei7`", "`-msse2`", "`-mavx`" etc.
+In some cases the architecture or support of the particular vector instructions need to be selected, such as: `"-march=native"`, `"-match=corei7"`, `"-msse2"`, `"-mavx"` etc.
 Be aware that such executable will then only run on the machines which support the selected architecture options.
 
 With the same example as for the MSVC compiler:
@@ -221,7 +221,7 @@ vectorize.cpp:4: note: vectorized 1 loops in function.
 
 (the level can be increased even more to see further diagnostics)
 
-So the reason the loop has not been vectorized is the control flow ("`if`") in the loop.
+So the reason the loop has not been vectorized is the control flow (`"if"`) in the loop.
 
 Now when the loop is split into two separate loops:
 
@@ -277,9 +277,9 @@ The CLang compiler has the following options for vectorization diagnostics (only
 - **-Rpass-missed=loop-vectorize**: Identifies loops that failed to vectorize.
 - **-Rpass-analysis=loop-vectorize**: Shows the statements that caused the vectorization to fail.
 
-To switch the vectorization on, again the "`-O3`" or "`-O2 -ftree-vectorize``" flags need to be used.
+To switch the vectorization on, again the `"-O3"` or "`-O2 -ftree-vectorize``" flags need to be used.
 
-Normally the "`-Rpass=loop-vectorize`" is not necessary, so that in the case everything was successfully vectorized no diagnostics is printed.
+Normally the `"-Rpass=loop-vectorize"` is not necessary, so that in the case everything was successfully vectorized no diagnostics is printed.
 
 With the first example:
 
@@ -317,7 +317,7 @@ vectorize.cpp:11:15: remark: the cost-model indicates that interleaving is not b
 vectorize.cpp:11:15: remark: vectorized loop (vectorization width: 4, interleaved count: 1) [-Rpass=loop-vectorize]
 ```
 
-Note that the CLang optimizer was still able to vectorize the second loop, however prints a remark on the "`if`" statement line, and the "*interleaved count*" is only 1 instead of 2. The interleaved instructions can exploit advanced hardware features, such as multiple execution units and out-of-order execution.
+Note that the CLang optimizer was still able to vectorize the second loop, however prints a remark on the `"if"` statement line, and the "*interleaved count*" is only 1 instead of 2. The interleaved instructions can exploit advanced hardware features, such as multiple execution units and out-of-order execution.
 
 The loop split into two separate loops:
 

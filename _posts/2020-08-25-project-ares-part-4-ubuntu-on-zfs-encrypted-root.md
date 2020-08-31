@@ -291,7 +291,7 @@ In this part we will prepare the pre-existing system for the ZFS migration. What
 
 **b) Enter the administrative console**:
 
-- this is for convenience to not have to type "`sudo`" in front of every command
+- this is for convenience to not have to type `"sudo"` in front of every command
 
 ```bash
 sudo -i
@@ -518,7 +518,7 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 **e) Repartition the primary disk**:
-- will be using the "`sgdisk`" command
+- will be using the `"sgdisk"` command
 - this presumes the disks will use mirroring at the end
 - see note about the swap partition at the end
 
@@ -611,7 +611,7 @@ cryptsetup luksOpen -d luks/init/root.key $DISK-part3 zroot-1
 **<a name="key_warn">Warning</a>**:
 
 - do not forget to copy the key out to a safe location (ideally also encrypted disk, password protected zip etc.) e.g. on your desktop PC
-- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by "`cat luks/init/root.key`"
+- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by `"cat luks/init/root.key"`
 - it will be needed for eventual recovery etc.
 {% endcapture %}
 
@@ -657,9 +657,9 @@ zpool status bpool
 {% capture notice_contents %}
 **<a name="bpool_note">Notes</a>**:
 
-- the boot pool is created with limited set of ZFS features (only those that the Grub bootloader can understand) - this is done by disabling all features first via the "`-d`" option and then enabling just the Grub-supported features selectively
-- the "`ashift=12`" parameter particularly important: it enforces the 4k sector size alignment - even though you might not have a 4k sector disk now, you might in the future when doing a disk replacement, therefore it is recommended to use this parameter
-- the "`atime=off`" and "`relatime=on`" speed up the disk operations, at the expense of not storing the last access time
+- the boot pool is created with limited set of ZFS features (only those that the Grub bootloader can understand) - this is done by disabling all features first via the `"-d"` option and then enabling just the Grub-supported features selectively
+- the `"ashift=12"` parameter particularly important: it enforces the 4k sector size alignment - even though you might not have a 4k sector disk now, you might in the future when doing a disk replacement, therefore it is recommended to use this parameter
+- the `"atime=off"` and `"relatime=on"` speed up the disk operations, at the expense of not storing the last access time
 {% endcapture %}
 
 {% include notice level="info" %}
@@ -695,10 +695,10 @@ zpool status rpool
 **<a name="rpool_note">Notes</a>**:
 
 - we use all available features for the root pool
-- the "`ashift=12`" parameter is used again to enforce the 4k sector size alignment
-- the "`atime=off`" and "`relatime=on`" used to speed up the disk operations
+- the `"ashift=12"` parameter is used again to enforce the 4k sector size alignment
+- the `"atime=off"` and `"relatime=on"` used to speed up the disk operations
 - when installing on SSD, the auto-trim needs to be used so that the TRIM works properly  
-(it also needs to be passed through the LUKS encryption layer, which will be done by using the "`discard`" option later)
+(it also needs to be passed through the LUKS encryption layer, which will be done by using the `"discard"` option later)
 {% endcapture %}
 
 {% include notice level="info" %}
@@ -839,7 +839,7 @@ for v in $VOLUMES; do mount /dev/backup/$v /mnt/backup/$v ; done
 
 **b) Copy the installation onto the ZFS**:
 
-- using the "`rsync`" to copy all including the permissions, attributes etc.)
+- using the `"rsync"` to copy all including the permissions, attributes etc.)
 
 ```bash
 # copy the installation root
@@ -899,7 +899,7 @@ less /target/etc/cryptsetup-initramfs/conf-hook
 {% capture notice_contents %}
 **<a name="fstab_note">Notes</a>**:
 
-- the use of the "`initramfs`" crypttab parameter is a work-around for the cryptsetup lack of ZFS support  
+- the use of the `"initramfs"` crypttab parameter is a work-around for the cryptsetup lack of ZFS support  
 (ensures that the boot image will contain the root encryption setup)
 {% endcapture %}
 
@@ -1062,7 +1062,7 @@ Note that if the disk is encrypted with LUKS, you'll need the encryption key (th
 
 **b) Enter the administrative console**:
 
-- this is for convenience to not have to type "`sudo`" in front of every command
+- this is for convenience to not have to type `"sudo"` in front of every command
 
 ```bash
 sudo -i
@@ -1100,7 +1100,7 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 **e) Decrypt the root partition**:
 
-- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by "`mkdir -p luks/init && vim luks/init/root.key`"
+- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by `"mkdir -p luks/init && vim luks/init/root.key"`
 
 - then use the key to decrypt the partition
 
