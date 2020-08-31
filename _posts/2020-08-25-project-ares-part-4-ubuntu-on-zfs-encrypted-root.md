@@ -583,7 +583,29 @@ However note that to be able to start if the primary disk fails, those extra par
 
 {% include notice level="warning" %}
 
-**f) Prepare the primary disk partitions** (formatting / encryption):
+**f) Prepare the disk arrays partitions** (mdadm):
+
+- unfortunately the crypttab options `"nofail"` doesn't seem to work with the cryptsetup during the bootup, which would make the system not boot in case either of the mirror drives would fail
+- therefore we need to using the MD RAID array even for the mirrored pools to be able to provide redundancy
+- this is in particular needed for the root partition where we want to use LUKS instead of the native ZFS partition, therefore the LUKS need to be below the ZFS layer (thus cannot use the ZFS RAID capabilities)
+- the MD RAID is then also used for the boot partition just to unify the setup  
+(although not strictly necessary there as not encrypted, so it could use the native ZFS mirroring)
+- note that we are using the `"missing"` for the second disk so far (effectively creating the degraded array first, will be completed later)
+
+```bash
+# create the boot partition MD mirror (degraded)
+mdadm --create /dev/md1 -l 1 -n 2 -e 1.2 ${DISK[1]}-part2 missing
+
+# create the root partition MD mirror (degraded)
+mdadm --create /dev/md2 -l 1 -n 2 -e 1.2 ${DISK[1]}-part3 missing
+
+# check the array status
+mdadm --detail /dev/md1
+mdadm --detail /dev/md2
+
+```
+
+**g) Prepare the primary disk partitions** (formatting / encryption):
 
 ```bash
 # UEFI only: format the EFI partition
@@ -600,8 +622,8 @@ dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
 
 # setup the root partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/root.key ${DISK[1]}-part3
-cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK[1]}-part3 zroot-1
+    -d /etc/crypt/init/root.key /dev/md2
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md2 zroot
 ```
 
 {% capture notice_contents %}
@@ -625,11 +647,10 @@ cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK[1]}-part3 zroot-1
 
 {% include notice level="danger" %}
 
-**g) Create the "boot" ZFS pool**:
+**h) Create the "boot" ZFS pool**:
 
 ```bash
 # create the "boot" pool
-# - the mirror will be attached later
 zpool create -f \
     -o ashift=12 \
     -d \
@@ -656,7 +677,7 @@ zpool create -f \
     -O mountpoint=/boot \
     -R /target \
     bpool \
-    ${DISK[1]}-part2
+    /dev/md1
 
 # test the pool status
 zpool status bpool
@@ -672,11 +693,10 @@ zpool status bpool
 
 {% include notice level="info" %}
 
-**h) Create the "root" ZFS pool** (on top of the LUKS encrypted partition):
+**i) Create the "root" ZFS pool** (on top of the LUKS encrypted partition):
 
 ```bash
 # create the "root" pool
-# - the mirror will be attached later
 zpool create -f \
     -o ashift=12 \
     -O acltype=posixacl \
@@ -690,7 +710,7 @@ zpool create -f \
     -O mountpoint=/ \
     -R /target \
     rpool \
-    /dev/mapper/zroot-1
+    /dev/mapper/zroot
 
 # for SSD: Set the auto-trim
 zpool set autotrim=on rpool
@@ -711,7 +731,7 @@ zpool status rpool
 
 {% include notice level="info" %}
 
-**i) Create the ZFS datasets** (this is Ubuntu specific, see the notes):
+**j) Create the ZFS datasets** (this is Ubuntu specific, see the notes):
 
 ```bash
 # create the bpool and rpool main datasets
@@ -881,7 +901,7 @@ echo "UUID=$(blkid -s UUID -o value ${DISK[1]}-part1) /boot/efi vfat noauto,umas
     >> /target/etc/fstab
 
 # add the root entry to the crypttab
-echo "zroot-1 UUID=$(blkid -s UUID -o value ${DISK[1]}-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
+echo "zroot /dev/md2 /etc/crypt/init/root.key luks,discard,initramfs" \
     >> /target/etc/crypttab
 
 # setup some basic protection of the encryption keys
@@ -980,7 +1000,7 @@ update-initramfs -c -k all
 lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
 # check for:
 # - the "cryptroot/crypttab" size
-# - the "cryptroot/keyfiles/zroot-1.key" file
+# - the "cryptroot/keyfiles/zroot.key" file
 ```
 
 **g) Install the GRUB boot loader**:
@@ -1122,7 +1142,7 @@ DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 - then use the key to decrypt the partition
 
 ```bash
-cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK[1]}-part3 zroot-1
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md2 zroot
 ```
 
 **f) Mound the ZFS volumes**:

@@ -158,62 +158,42 @@ grub-install --target=i386-pc ${DISK[2]}
 
 ### 2.4. Adding the Boot pool mirror
 
-- adding the boot pool mirror:
+- adding the boot partition mirror:
 
 ```bash
-# check the current pool status
-zpool status bpool
+# check the current array status
+mdadm --detail /dev/md1
 
 # attach the secondary disk partition
-zpool attach -f bpool ${DISK[1]}-part2 ${DISK[2]}-part2
+mdadm /dev/md1 --add ${DISK[2]}-part2
 
-# check the pool status to verify
+# check the array status to verify
 # - should see both attached
-zpool status bpool
+mdadm --detail /dev/md1
 ```
 
 ### 2.5. Adding the Root pool mirror
 
-- first the partition is encrypted using the same LUKS key as before:
+- adding the root partition mirror:
 
 ```bash
-# setup the secondary root partition encryption
-cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/root.key ${DISK[2]}-part3
-cryptsetup luksOpen -d /etc/crypt/init/root.key $DISK_2-part3 zroot-2
+# check the current array status
+mdadm --detail /dev/md2
 
-# add the crypttab entry
-echo "zroot-2 UUID=$(blkid -s UUID -o value ${DISK[2]}-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
-    >> /etc/crypttab
-```
-
-{% capture notice_contents %}
-**<a name="root_note">Notes</a>**:
-
-- the `"discard"` crypttab parameter is used to allow processing of the TRIM commands
-{% endcapture %}
-
-{% include notice level="info" %}
-
-- adding the root pool mirror:
-
-```bash
-# check the current pool status
-zpool status rpool
 
 # attach the secondary disk partition
-zpool attach -f rpool zroot-1 zroot-2
+mdadm /dev/md2 --add ${DISK[2]}-part3
 
-# check the pool status to verify
+# check the array status to verify
 # - should see both attached
-zpool status rpool
+mdadm --detail /dev/md2
 ```
 
 ### 2.6. Setting up the SWAP file
 
 - the swap file also needs to be mirrored if we want to be able to run from either of the drives (otherwise the swap file would not be found and the boot loading will fail)
 - this in particular is necessary if the hibernation is used
-- if no hibernation is used, it might also be possible the ignore the swap partition mount error by using the "nofail" fstab/crypttab flags (as we do for the root partition)
+- if no hibernation is used, it might also be possible the ignore the swap partition mount error by using the "nofail" fstab/crypttab flags
 - we will use mdadm as the mirroring option here
 - we will re-do the complete swap setup now
 
@@ -233,9 +213,9 @@ zpool status rpool
 swapoff -a
 
 # create the swap MD array
-mdadm --create /dev/md0 -l 1 -n 2 -e 1.2 ${DISK[1]}-part4 ${DISK[2]}-part4
+mdadm --create /dev/md3 -l 1 -n 2 -e 1.2 ${DISK[1]}-part4 ${DISK[2]}-part4
 # check the array status
-mdadm --detail /dev/md0
+mdadm --detail /dev/md3
 ```
 
 **b) The swap encryption setup**:
@@ -259,14 +239,15 @@ mdadm --detail /dev/md0
 ```bash
 # setup the swap partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/root.key /dev/md0
-cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md0 swap
+    -d /etc/crypt/init/root.key /dev/md3
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md3 swap
 
 # make the swap filesystem
 mkswap /dev/mapper/swap
 
 # add the crypttab entry
-echo "swap /dev/md0 /etc/crypt/init/root.key luks,discard,initramfs" \
+# (using "discard" to allow SSD TRIM commands)
+echo "swap /dev/md3 /etc/crypt/init/root.key luks,discard,initramfs" \
     >> /etc/crypttab
 ```
 
@@ -317,7 +298,9 @@ prereqs)
     ;;
 esac
 
-mdadm --run /dev/md0
+mdadm --run /dev/md1
+mdadm --run /dev/md2
+mdadm --run /dev/md3
 EOF
 
 chmod +x /etc/initramfs-tools/scripts/local-top/md-boot
@@ -334,8 +317,7 @@ update-initramfs -c -k all
 lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
 # check for:
 # - the "cryptroot/crypttab" size
-# - the "cryptroot/keyfiles/zroot-1.key" file
-# - the "cryptroot/keyfiles/zroot-2.key" file
+# - the "cryptroot/keyfiles/zroot.key" file
 # - the "cryptroot/keyfiles/swap.key" file
 ```
 
@@ -380,6 +362,50 @@ The following table shows the differences between the power saving modes:
 | Suspend   |   Yes  |   No   | Very fast | Very fast |     Low     |         No          |
 | Hibernate |   No   |   Yes  |   Fast    |   Fast    |   Very low  |         Yes         |
 | Hybrid    |   Yes  |   Yes  |   Fast    | Very fast |     Low     |         Yes         |
+
+### 3.2. Testing the redundancy
+
+Optionally (but strongly recommended) you can test if the system boots up in case one if the mirrored system drives fails:
+1. Shut down the machine (e.g. by using `"init 0"`)
+2. **Physically disconnect one of the drives**
+3. Try to turn the machine on, to see if it boots up without any issues
+4. **Connect the drive back and boot again**
+5. Repeat for the other drive
+
+Check the status of the ZFS pools and MD-RAID, you should see results like:
+
+```bash
+mdadm --detail /dev/md1
+```
+
+```
+/dev/md1:
+           Version : 1.2
+     Creation Time : Sun Aug 30 17:41:16 2020
+        Raid Level : raid1
+        Array Size : 2095856 (2.00 GiB 2.14 GB)
+     Used Dev Size : 2095856 (2.00 GiB 2.14 GB)
+      Raid Devices : 2
+     Total Devices : 1
+       Persistence : Superblock is persistent
+
+       Update Time : Fri Sep 18 22:41:03 2020
+             State : clean, degraded
+    Active Devices : 1
+   Working Devices : 1
+    Failed Devices : 0
+     Spare Devices : 0
+
+Consistency Policy : resync
+
+              Name : ubuntu-test:1  (local to host ubuntu-test)
+              UUID : e7eec08c:dd48273c:d753a245:07b201ea
+            Events : 111
+
+    Number   Major   Minor   RaidDevice State
+       0       8        4        0      active sync   /dev/sda2
+       -       0        0        1      removed
+```
 
 ## 4. Setting up the RAID-5 data disks
 
