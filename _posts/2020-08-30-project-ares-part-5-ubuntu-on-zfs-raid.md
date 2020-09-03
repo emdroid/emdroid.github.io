@@ -226,11 +226,18 @@ zpool status rpool
 {% capture notice_contents %}
 **<a name="swap_notes">Warning</a>**:
 
+- note that this setup still doesn't work for hibernation, as this uses the swap partition key stored on the root partition  
+(which is not available at the resume phase)
+- for hibernation, there are 2 basic options:
+  - using the swap without encryption (less safety)
+  - putting the hibernation partition encryption key into the initramfs (like we do for the root partition for now)
 - some early guides recommended putting the swap onto ZFS (ZVOL), however that is currently not recommended as it might create eventual deadlocks [^6]
 - for non-ZFS setup the Ubuntu recommends using a swap file instead of the swap partition now, but that is not recommended either when using the ZFS (for the same reason as above)
 {% endcapture %}
 
 {% include notice level="warning" %}
+
+**a) The swap partition and RAID setup**:
 
 ```bash
 # unmount the current swap
@@ -240,18 +247,54 @@ swapoff -a
 mdadm --create /dev/md0 -l 1 -n 2 -e 1.2 $DISK-part4 $DISK_2-part4
 # check the array status
 mdadm --detail /dev/md0
+```
 
-# add the new swap entry into the crypttab
-echo "swap /dev/md0 /dev/urandom swap,discard,cipher=aes-xts-plain64:sha256,size=512" \
+**b) The swap encryption setup**:
+
+{% capture notice_contents %}
+**<a name="swap_warn">Important</a>**:
+
+- the "standard" non-hibernation encrypted swap setup is usually done via the "_/dev/urandom_" for generating the one-time encryption key
+- this doesn't work properly with ZFS root (even without hibernation!), because it creates a module load cycle during the bootup, resulting in some ZFS pools not being mounted randomly  
+(depending where the cycle is broken by the boot loader)
+- in the principle this is caused by the cryptsetup needing the root partition (for "_/dev/urandom_") but the ZFS target to mount the root partition requiring cryptsetup, creating the cyclic dependency
+- therefore we use an **explicit generated encryption key** that is used for the swap encryption
+{% endcapture %}
+
+{% include notice level="danger" %}
+
+```bash
+# generate the encryption key
+# (stored on the encrypted root partition)
+dd if=/dev/urandom bs=512 skip=4 count=16 | base64 \
+    > /etc/crypt/swap.key
+
+chmod go-rwx /etc/crypt/swap.key
+
+# setup the swap partition encryption
+cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
+    -d /etc/crypt/swap.key /dev/md0
+cryptsetup luksOpen -d /etc/crypt/swap.key /dev/md0 swap
+
+# make the swap filesystem
+mkswap /dev/mapper/swap
+
+# add the crypttab entry
+echo "swap /dev/md0 /etc/crypt/swap.key luks,discard" \
     >> /etc/crypttab
+```
 
-# open the crypttab
-vim /etc/crypttab
+**c) Finalizing the swap partition setup**:
+
+```bash
+# add the encrypted swap entry to the fstab
+echo "/dev/mapper/swap none swap sw,discard 0 0" \
+    >> /etc/fstab
 
 # remove the original swap entry in crypttab if any
+vim /etc/crypttab
+vim /etc/fstab
 
-# start the encrypted swap
-cryptdisks_start swap
 # re-enable the swap
 swapon -a
 

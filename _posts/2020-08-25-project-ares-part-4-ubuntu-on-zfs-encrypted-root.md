@@ -620,6 +620,17 @@ cryptsetup luksOpen -d /etc/crypt/init/root.key $DISK-part3 zroot-1
 
 {% include notice level="warning" %}
 
+{% capture notice_contents %}
+**<a name="swap_warn">Important</a>**:
+
+- the previous version of the article contained the "standard" encrypted swap partition setup by using the "_/dev/urandom_" for encryption
+- this doesn't work properly with ZFS root, because it created a module load cycle during the bootup, resulting in some ZFS pools not being mounted randomly  
+(depending where the cycle is broken by the boot loader)
+- in the principle this is caused by the cryptsetup needing the root partition (for "_/dev/urandom_") but the ZFS target to mount the root partition requiring cryptsetup, creating the cyclic dependency
+{% endcapture %}
+
+{% include notice level="danger" %}
+
 **g) Create the "boot" ZFS pool**:
 
 ```bash
@@ -891,14 +902,6 @@ echo "UUID=$(blkid -s UUID -o value $DISK-part1) /boot/efi vfat noauto,umask=007
 echo "zroot-1 UUID=$(blkid -s UUID -o value $DISK-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
     >> /target/etc/crypttab
 
-# eventually add the entry for the swap encryption (recommended)
-echo "swap PARTUUID=$(blkid -s PARTUUID -o value $DISK-part4) /dev/urandom swap,discard,cipher=aes-xts-plain64:sha256,size=512" \
-    >> /target/etc/crypttab
-
-# add the encrypted swap entry (if used) to the fstab
-echo "/dev/mapper/swap none swap sw,discard 0 0" \
-    >> /target/etc/fstab
-
 # setup some basic protection of the encryption keys
 echo "UMASK=0077" \
     >> /target/etc/initramfs-tools/initramfs.conf
@@ -934,7 +937,10 @@ vim /target/etc/fstab
 ```
 
 - remove the original volumes mountpoins for root etc.
-- keep just the swap and the EFI partition
+- keep just the the EFI partition  
+(you can just comment out the existing entries by using the `"#"` character)
+- the swap file will not be used for now, even though we allocated the space  
+(the setup will be done in the next part)
 - the ZFS mountpoints are not needed because of being mounted automatically (via zsys)
 
 **d) Update the Grub boot loader configuration**:
