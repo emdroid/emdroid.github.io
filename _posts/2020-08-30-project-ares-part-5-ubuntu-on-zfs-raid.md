@@ -226,11 +226,6 @@ zpool status rpool
 {% capture notice_contents %}
 **<a name="swap_notes">Warning</a>**:
 
-- note that this setup still doesn't work for hibernation, as this uses the swap partition key stored on the root partition  
-(which is not available at the resume phase)
-- for hibernation, there are 2 basic options:
-  - using the swap without encryption (less safety)
-  - putting the hibernation partition encryption key into the initramfs (like we do for the root partition for now)
 - some early guides recommended putting the swap onto ZFS (ZVOL), however that is currently not recommended as it might create eventual deadlocks [^6]
 - for non-ZFS setup the Ubuntu recommends using a swap file instead of the swap partition now, but that is not recommended either when using the ZFS (for the same reason as above)
 {% endcapture %}
@@ -263,24 +258,21 @@ mdadm --detail /dev/md0
 
 {% include notice level="danger" %}
 
+- for the hibernation to work the swap encryption key is added to the initramfs  
+(using the root partition key)
+- if you don't plan to use the hibernation, the encryption key can be loaded from the root directly (without putting it to the initramfs)
+
 ```bash
-# generate the encryption key
-# (stored on the encrypted root partition)
-dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
-    > /etc/crypt/swap.key
-
-chmod go-rwx /etc/crypt/swap.key
-
 # setup the swap partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/swap.key /dev/md0
-cryptsetup luksOpen -d /etc/crypt/swap.key /dev/md0 swap
+    -d /etc/crypt/init/root.key /dev/md0
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md0 swap
 
 # make the swap filesystem
 mkswap /dev/mapper/swap
 
 # add the crypttab entry
-echo "swap /dev/md0 /etc/crypt/swap.key luks,discard" \
+echo "swap /dev/md0 /etc/crypt/init/root.key luks,discard,initramfs" \
     >> /etc/crypttab
 ```
 
@@ -302,6 +294,15 @@ swapon -a
 swapon --summary
 ```
 
+**d) Enabling the hibernation**:
+
+- this is optional - the hibernation can be enabled so that the system can wake up where it was stopped
+
+```bash
+# add the resume option
+echo "RESUME=/dev/mapper/swap" > /etc/initramfs-tools/conf.d/resume
+```
+
 ### 2.7. Updating the initram to contain all LUKS key entries
 
 ```bash
@@ -315,9 +316,52 @@ lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
 # - the "cryptroot/crypttab" size
 # - the "cryptroot/keyfiles/zroot-1.key" file
 # - the "cryptroot/keyfiles/zroot-2.key" file
+# - the "cryptroot/keyfiles/swap.key" file
 ```
 
-## 3. Setting up the RAID-5 data disks
+## 3. Testing the system disk setup
+
+### 3.1. Testing the hibernation
+
+- checking the hibernation support:
+
+```bash
+# install the power management utils
+apt install -y pm-utils
+
+# check the hibernation / suspend support:
+# pm-is-supported [{--suspend | --hibernate | --suspend-hybrid}]
+for state in suspend hibernate suspend-hybrid ; do
+    pm-is-supported --$state && echo "$state: supported" || echo "$state: not supported"
+done
+```
+
+- performing the hibernation:
+
+```bash
+# test the hibernation
+systemctl hibernate
+# or
+pm-hibernate
+
+# start the PC again after the hibernation
+# and check the state restored
+```
+
+In particular, the "_suspend-hybrid_" state is especially interesting:
+- it allows enter the sleep mode but the state is saved to the disk (hibernated) at the same time
+- that means the wake up is fast in the usual case (waking up just from sleep mode)
+- but if the power is lost, the state can still be restored from disk
+
+The following table shows the differences between the power saving modes:
+
+| Mode      | To RAM | To HDD | Suspend   | Restore   | Consumption | Survives power down |
+| :-------- | :----: | :----: | :-------: | :-------: | :---------: | :-----------------: |
+| Suspend   |   Yes  |   No   | Very fast | Very fast |     Low     |         No          |
+| Hibernate |   No   |   Yes  |   Fast    |   Fast    |   Very low  |         Yes         |
+| Hybrid    |   Yes  |   Yes  |   Fast    | Very fast |     Low     |         Yes         |
+
+## 4. Setting up the RAID-5 data disks
 
 This section explains the RAID-5 data disks setup.
 
@@ -333,7 +377,7 @@ To recap, there are 2 main reasons to not use the native ZFS encryption and raid
 The disadvantages of this solution:
 - the ZFS RAID would be able the synchronize on the filesystem level (knows which data are valid) thus much faster resyncing (mdraid needs to sync the whole block device as it doesn't have the knowledge which data are valid)
 
-### 3.1. Preparing the environment
+### 4.1. Preparing the environment
 
 **a) Install the necessary packages**:
 
@@ -359,7 +403,7 @@ DISK[3]=/dev/disk/by-path/<tab-complete-the-disk-path>
 DISK[4]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
-### 3.2. Creating the partitions
+### 4.2. Creating the partitions
 
 - we will create a single partition covering the entire disk for each of the RAID disks
 - the disk partition will then be used to create the array
@@ -411,7 +455,7 @@ for n in $(seq 1 4); do sgdisk -n1:0:${DISK_SECT_MAX} -t1:BF03 ${DISK[$n]} ; don
 for n in $(seq 1 4); do sgdisk -p ${DISK[$n]} ; done
 ```
 
-### 3.3. Setting up the array (mdraid)
+### 4.3. Setting up the array (mdraid)
 
 ```bash
 # create the array
@@ -435,7 +479,7 @@ mdadm --detail /dev/md100
 
 {% include notice level="info" %}
 
-### 3.4. Encrypting the partition
+### 4.4. Encrypting the partition
 
 - in this case we show how to encrypt using the VeraCrypt instead of LUKS
 - the key is stored on the root partition (which itself is encrypted)
@@ -484,7 +528,7 @@ cryptdisks_start data-1
 
 {% include notice level="info" %}
 
-### 3.5. Creating the ZFS pool
+### 4.5. Creating the ZFS pool
 
 - now we can create the data pool and eventual datasets on top of the encrypted drive
 
@@ -548,7 +592,7 @@ ls -al /data/media
 - note that all the data sets share the total space, so there is no need for thin provisioning  
 (it is eventually also possible to setup quota for particular data sets)
 
-## 4. Next steps
+## 5. Next steps
 
 In the next part we'll setup the reporting (SMART etc.) and complete the basic system setup.
 
