@@ -5,6 +5,7 @@ header:
 toc: true
 sidebar:
   nav: "fs-ares"
+hidden: true
 categories:
   - Operating Systems
   - Linux
@@ -29,35 +30,15 @@ The part 4 describes the steps taken to install the chosen OS (Ubuntu Server 20.
 ## 1. Introduction
 
 In the [previous part]({% post_url 2020-07-18-project-ares-part-3-os-and-file-system-considerations %}) the decision has been made to use the **[Ubuntu Legacy Server 20.04 LTS](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/)** as the NAS operating system.
-In addition, it should be installed onto a ZFS file system, using the encrypted root partition.
+In addition, it should be installed onto a ZFS file system, using the underlying LUKS encryption for the root partition.
 
 {% capture notice_contents %}
-**<a name="zfs-native-info">Important changes</a>**
+**<a name="zfs-native-info">Important note</a>**
 
-Contrary to the initial intent described in the [Part 3 (OS and filesystem)]({% post_url 2020-07-18-project-ares-part-3-os-and-file-system-considerations %}#52-the-data-disks), I ended up using the native ZFS encryption.
+I eventually decided to setup my disks using the native ZFS encryption and RAID, after performing some comparisons and measurements.
 
-**The original version of the article is still available here:  
-[Project Ares: Part IV - Ubuntu Server on ZFS (original version)]({% post_url 2020-08-25-project-ares-part-4-ubuntu-on-zfs-encrypted-root-initial %})**
-
-I made this decision after performing the speed measurements and finding out that the **native ZFS encryption is not as bad** as some of the Internet reports suggested [^3], and in fact using the native ZFS encryption + RAID is performing significantly better than using the non-native combination of MD-RAID + LUKS/VeraCrypt + pure ZFS:
-- _MD RAID/VeraCrypt/ZFS write speed_: 220 - 250 MB/s
-(depending on the MD-RAID strip size)
-- _native ZFS/raid/encryption write speed_: 300 - 310 MB/s
-(using the currently most secure "aes-256-gcm" encryption)
-- these are results for the data drives (magnetic rotational 4 x 8 TB HDD&zwj;s in RAID-5 configuration)
-
-However this is valid for my specific hardware setup where I did the measurements, and I cannot guarantee that it will be always true with any hardware setup. 
-
-The use of the native ZFS encryption has the following significant advantages:
-- the data are only encrypted once and on the filesystem level  
-(with external encryption + RAID they might be encrypted multiple times e.g. for the mirrored disks)
-- the native ZFS RAID can also be used  
-(use of external encryption like LUKS/VeraCrypt enforces the usage of external RAID solution like MD-RAID)
-- this simplifies the whole setup heavily
-
-The ZFS encryption seems to be reasonably safe, is using the AES standard (currently up to 256-bit master key) and to the date I didn't find any published flaws or issues, see also these videos for the details about the encryption implementation:
-- [ZFS Native Encryption by Tom Caputi](https://www.youtube.com/watch?v=frnLiXclAMo)
-- [Securing the Cloud with ZFS Encryption by Jason King](https://www.youtube.com/watch?v=kFuo5bDj8C0)
+**This is the old version of the article, the new version using the native ZFS is now available here:  
+[Project Ares: Part IV - Ubuntu Server on ZFS (encrypted root)]({% post_url 2020-08-25-project-ares-part-4-ubuntu-on-zfs-encrypted-root %})**
 {% endcapture %}
 
 {% include notice level="warning" %}
@@ -580,9 +561,6 @@ sgdisk -n4:0:0 -t4:8200 -c4:"Swap" ${DISK[1]}
 
 # check by listing the partitions
 sgdisk -p ${DISK[1]}
-
-# UEFI only: format the EFI partition
-mkdosfs -F 32 -s 1 -n EFS ${DISK[1]}-part1
 ```
 
 {% capture notice_contents %}
@@ -617,27 +595,54 @@ However note that to be able to start if the primary disk fails, those extra par
 
 {% include notice level="warning" %}
 
-**f) Generate the encryption keys**:
+**f) Prepare the disk arrays partitions** (mdadm):
 
-- using the `"hexdump"` command to convert the raw binary keys to hex format  
-(in order to only include "printable" chars)
+- unfortunately the crypttab options `"nofail"` doesn't seem to work with the cryptsetup during the bootup, which would make the system not boot in case either of the mirror drives would fail
+- therefore we need to using the MD RAID array even for the mirrored pools to be able to provide redundancy
+- this is in particular needed for the root partition where we want to use LUKS instead of the native ZFS partition, therefore the LUKS need to be below the ZFS layer (thus cannot use the ZFS RAID capabilities)
+- the MD RAID is then also used for the boot partition just to unify the setup  
+(although not strictly necessary there as not encrypted, so it could use the native ZFS mirroring)
+- note that we are using the `"missing"` for the second disk so far (effectively creating the degraded array first, will be completed later)
 
 ```bash
-# generate the ZFS root partition key
-mkdir -p /etc/crypt/zfs/init
-dd if=/dev/urandom bs=32 skip=4 count=1 iflag=fullblock | hexdump -ve '/1 "%02x"' \
-    > /etc/crypt/zfs/init/root.key
+# create the boot partition MD mirror (degraded)
+mdadm --create /dev/md1 -l 1 -n 2 -e 1.2 ${DISK[1]}-part2 missing
 
-# the home partition key
-dd if=/dev/urandom bs=32 skip=4 count=1 iflag=fullblock | hexdump -ve '/1 "%02x"' \
-    > /etc/crypt/zfs/home.key
+# create the root partition MD mirror (degraded)
+mdadm --create /dev/md2 -l 1 -n 2 -e 1.2 ${DISK[1]}-part3 missing
+
+# check the array status
+mdadm --detail /dev/md1
+mdadm --detail /dev/md2
+
+```
+
+**g) Prepare the primary disk partitions** (formatting / encryption):
+
+```bash
+# UEFI only: format the EFI partition
+mkdosfs -F 32 -s 1 -n EFS ${DISK[1]}-part1
+
+# prepare the temporary target directory
+mkdir -p /target
+
+# create the root partition LUKS key
+# - using the Base64 encoding to only have printable chars in the key
+mkdir -p /etc/crypt/init
+dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
+    > /etc/crypt/init/root.key
+
+# setup the root partition encryption
+cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
+    -d /etc/crypt/init/root.key /dev/md2
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md2 zroot
 ```
 
 {% capture notice_contents %}
 **<a name="key_warn">Warning</a>**:
 
 - do not forget to copy the key out to a safe location (ideally also encrypted disk, password protected zip etc.) e.g. on your desktop PC
-- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by `"cat /etc/crypt/zfs/init/root.key"`
+- can use e.g. [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard after printing the key on the screen by `"cat /etc/crypt/init/root.key"`
 - it will be needed for eventual recovery etc.
 {% endcapture %}
 
@@ -654,14 +659,10 @@ dd if=/dev/urandom bs=32 skip=4 count=1 iflag=fullblock | hexdump -ve '/1 "%02x"
 
 {% include notice level="danger" %}
 
-**g) Create the "boot" ZFS pool**:
+**h) Create the "boot" ZFS pool**:
 
 ```bash
-# prepare the temporary target directory
-mkdir -p /target
-
 # create the "boot" pool
-# - the mirror will be attached later
 zpool create -f \
     -o ashift=12 \
     -d \
@@ -688,7 +689,7 @@ zpool create -f \
     -O mountpoint=/boot \
     -R /target \
     bpool \
-    ${DISK[1]}-part2
+    /dev/md1
 
 # test the pool status
 zpool status bpool
@@ -704,11 +705,10 @@ zpool status bpool
 
 {% include notice level="info" %}
 
-**h) Create the "root" ZFS pool** (on top of the LUKS encrypted partition):
+**i) Create the "root" ZFS pool** (on top of the LUKS encrypted partition):
 
 ```bash
 # create the "root" pool
-# - the mirror will be attached later
 zpool create -f \
     -o ashift=12 \
     -O acltype=posixacl \
@@ -722,7 +722,7 @@ zpool create -f \
     -O mountpoint=/ \
     -R /target \
     rpool \
-    ${DISK[1]}-part3
+    /dev/mapper/zroot
 
 # for SSD: Set the auto-trim
 zpool set autotrim=on rpool
@@ -738,11 +738,12 @@ zpool status rpool
 - the `"ashift=12"` parameter is used again to enforce the 4k sector size alignment
 - the `"atime=off"` and `"relatime=on"` used to speed up the disk operations
 - when installing on SSD, the auto-trim needs to be used so that the TRIM works properly  
+(it also needs to be passed through the LUKS encryption layer, which will be done by using the `"discard"` option later)
 {% endcapture %}
 
 {% include notice level="info" %}
 
-**i) Create the ZFS datasets** (this is Ubuntu specific, see the notes):
+**j) Create the ZFS datasets** (this is Ubuntu specific, see the notes):
 
 ```bash
 # create the bpool and rpool main datasets
@@ -762,26 +763,18 @@ zfs create \
     -o mountpoint=/boot \
     bpool/BOOT/ubuntu
 
-# root encrypted via the "root" key
 zfs create \
     -o canmount=noauto \
     -o mountpoint=/ \
     -o com.ubuntu.zsys:bootfs=yes \
     -o com.ubuntu.zsys:last-used=$(date +%s) \
-    -o encryption=aes-256-gcm \
-    -o keyformat=hex \
-    -o keylocation=file:///etc/crypt/zfs/init/root.key \
     rpool/ROOT/ubuntu
 
 # create the main user dataset
-# (encrypted via the "home" key)
 zfs create \
     -o canmount=off \
     -o mountpoint=none \
     -o setuid=off \
-    -o encryption=aes-256-gcm \
-    -o keyformat=hex \
-    -o keylocation=file:///etc/crypt/zfs/home.key \
     rpool/USER
 
 # mount the main data sets
@@ -862,14 +855,6 @@ zfs list
 ls -al /target/
 ls -al /target/boot/
 ls -al /target/home/
-
-# check the encryption:
-#   1. Expect root encrypted
-zfs get encryption /target/
-#   2. Expect home/$TARGET_USER encrypted
-zfs get encryption /target/home/$TARGET_USER
-#   3. Expect boot not encrypted
-zfs get encryption /target/boot
 ```
 
 {% capture notice_contents %}
@@ -915,7 +900,7 @@ ls -al /target/home/
 
 ```bash
 # copy the encryption keys
-cp -r /etc/crypt /target/etc/
+cp -r crypt /target/etc/
 # make it only readable for the root user
 chmod -R go-rwx /target/etc/crypt
 ```
@@ -927,37 +912,37 @@ chmod -R go-rwx /target/etc/crypt
 echo "UUID=$(blkid -s UUID -o value ${DISK[1]}-part1) /boot/efi vfat noauto,umask=0077,fmask=0077,dmask=0077 0 1" \
     >> /target/etc/fstab
 
+# add the root entry to the crypttab
+echo "zroot /dev/md2 /etc/crypt/init/root.key luks,discard,initramfs" \
+    >> /target/etc/crypttab
+
 # setup some basic protection of the encryption keys
 echo "UMASK=0077" \
     >> /target/etc/initramfs-tools/initramfs.conf
+
+# add the key pattern to be included in the initramfs
+echo 'KEYFILE_PATTERN="/etc/crypt/init/*.key"' \
+    >> /target/etc/cryptsetup-initramfs/conf-hook
+# check it has been added properly
+less /target/etc/cryptsetup-initramfs/conf-hook
 
 # disable the resume (hibernation) for now
 echo "RESUME=none" > /target/etc/initramfs-tools/conf.d/resume
 ```
 
-- create the initrd script to copy the init level key files:
+{% capture notice_contents %}
+**<a name="fstab_note">Notes</a>**:
 
-```bash
-  cat <<EOF > /target/etc/initramfs-tools/hooks/zfs-crypt
-#!/bin/sh
+- the use of the `"initramfs"` crypttab parameter is a work-around for the cryptsetup lack of ZFS support  
+(ensures that the boot image will contain the root encryption setup)
+- the `"nofail"` and `"x-systemd.device-timeout"` are to ignore eventual error if the partition cannot be mounted (for the RAID-1 configuration)
+- the `"discard"` crypttab parameter is used to allow processing of the TRIM commands:
+  - this is only necessary to do for SSD drives
+  - it is less secure (the trimmed areas can reveal where and how much valid data are there)
+  - but without it the SSD cannot properly handle the free space, which worsens the performance and wear leveling
+{% endcapture %}
 
-PREREQS=""
-
-case \$1 in
-    prereqs) echo "\${PREREQS}"; exit 0;;
-esac
-
-. /usr/share/initramfs-tools/hook-functions
-
-mkdir -p \${DESTDIR}/etc/crypt/zfs || true
-cp -ar /etc/crypt/zfs/init \${DESTDIR}/etc/crypt/zfs/
-chmod -R go-rwx \${DESTDIR}/etc/crypt
-EOF
-
-
-# set the permissions
-chmod +x /target/etc/initramfs-tools/hooks/zfs-crypt
-```
+{% include notice level="info" %}
 
 **c) Setup the fstab for the ZFS migration**:
 
@@ -1026,7 +1011,8 @@ update-initramfs -c -k all
 # check if the cryptkeys are present in the initramfs
 lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
 # check for:
-# - the "etc/crypt/init/root.key" file
+# - the "cryptroot/crypttab" size
+# - the "cryptroot/keyfiles/zroot.key" file
 ```
 
 **g) Install the GRUB boot loader**:
@@ -1111,18 +1097,6 @@ reboot
 
 Now the basic system installation should be ready.
 
-{% capture notice_contents %}
-**<a name="zfs-reboot-info">Warning</a>**
-
-For some reason it is necessary to reboot twice, as for the first time the user directories (root, <target_user>) do not mount for some reason.
-
-Therefore it is necessary to reboot once again, at the second boot all the disks should be mounted.
-
-The likely reason are the ZFS mount ordering and caches, it might need to adjust the mount order for the first time (in particular with regard to the key location). But not completely sure about the exact reason yet.
-{% endcapture %}
-
-{% include notice level="warning" %}
-
 ## 5. System recovery
 
 This section describes the steps for eventual recovery of the system, should something go wrong.
@@ -1175,23 +1149,23 @@ DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 **e) Decrypt the root partition**:
 
-- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by `"mkdir -p /etc/crypt/zfs/init && vim /etc/crypt/zfs/init/root.key"`
+- copy the key back to the Live CD environment e.g. via [WinSCP](https://winscp.net/eng/download.php) on Windows, the "scp" command on Linux or the clipboard by `"mkdir -p /etc/crypt/init && vim /etc/crypt/init/root.key"`
+
+- then use the key to decrypt the partition
+
+```bash
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md2 zroot
+```
 
 **f) Mound the ZFS volumes**:
 
 ```bash
-# create the target dir
 mkdir /target
 
-# import the pools
 zpool export -a
 zpool import -f -N -R /target rpool
 zpool import -f -N -R /target bpool
 
-# import the root partition key
-# (will load from the current live CD "/etc/crypt/zfs/init/root.key")
-zfs load-key rpool/ROOT/ubuntu
-# mount the root
 zfs mount -a
 
 # check if mounted properly
@@ -1214,16 +1188,7 @@ chroot /target /usr/bin/env \
     DISK=$DISK \
     bash --login
 
-# import the home partition key
-# (will load from the target root "/etc/crypt/zfs/home.key")
-zfs load-key rpool/USER
-# mount the home
-zfs mount -a
-
-# validate the USER datasets mounted
-mount | grep USER
-
-# mount all additional disks from /etc/fstab
+# mount all additional disks
 mount -a
 ```
 

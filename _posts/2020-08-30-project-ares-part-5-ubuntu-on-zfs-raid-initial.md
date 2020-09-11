@@ -5,6 +5,7 @@ header:
 toc: true
 sidebar:
   nav: "fs-ares"
+hidden: true
 categories:
   - Operating Systems
   - Linux
@@ -34,33 +35,12 @@ In the [previous part]({% post_url 2020-08-25-project-ares-part-4-ubuntu-on-zfs-
 Now we will complete the system disks setup for RAID-1 redundancy configuration and the data drives with RAID-5 setup.
 
 {% capture notice_contents %}
-**<a name="zfs-native-info">Important changes</a>**
+**<a name="zfs-native-info">Important note</a>**
 
-Contrary to the initial intent described in the [Part 3 (OS and filesystem)]({% post_url 2020-07-18-project-ares-part-3-os-and-file-system-considerations %}#52-the-data-disks), I ended up using the native ZFS encryption and RAID.
+I eventually decided to setup my disks using the native ZFS encryption and RAID, after performing some comparisons and measurements.
 
-**The original version of the article is still available here:  
-[Project Ares: Part V - RAID and data drives (original version)]({% post_url 2020-08-30-project-ares-part-5-ubuntu-on-zfs-raid-initial %})**
-
-See the note in the [previous article]({% post_url 2020-08-25-project-ares-part-4-ubuntu-on-zfs-encrypted-root %}#zfs-native-info) for native ZFS encryption details.
-
-With the full knowledge about the ZFS native RAID limitations, I still decided to also use the native RAID-5 for the data disks because of the **MD-RAID being way too slow with my 4 x 8 TB disk setup**:
-- when I tried to create the MD RAID array over the disk setup, the initial array synchronization was at approx. 4 % after 1 hour
-- that would mean the entire array sync would take maybe around 25 hours (= 1 day) of array rebuild time
-- however this was when idle, in the real scenario the disks might still be used while the degraded array is eventually being rebuilt, which increases the rebuild time  
-(depending on the usage pattern the increase might be 2x - 10x more)
-- and if another disk (stressed by the rebuilding) fails in this period, all the data are lost
-- note in particular, that the MD-RAID needs to synchronize the whole disks (even if empty) because of working on the block level thus doesn't have the information which data are in use
-
-**The ZFS native RAID has a huge advantage in this respect**:
-- it knows which data are used (synchronizes on the file system level) so it only needs to write the minimal necessary data
-- therefore it doesn't even need to do any significant initial synchronization when the RAID is created (as there is no data yet, except for the basic ZFS metadata)
-- thus in general the array rebuild ("resilvering") is significantly faster compared to the the block-level MD-RAID, especially when the disks are not completely full
-
-**The main disadvantage of using the native ZFS RAID** is the inability to add an additional disk to the array (cannot add disks, needs to create a new RAID VDEV group instead) [^1].
-However that actually doesn't seem to pose a too big issue for my setup right now, as the 4 x 8 TB disks (= 24 TB in RAID-5) should offer enough disk space for at least the next few years.
-
-And there actually seems to be some **significant effort to offer the possibility of expanding the ZFS raid-z arrays** [^7] - although it seems to be somewhat stale, but there already is the Alpha version out.
-So it isn't too far stretched to expect the feature being already available at the time I might eventually need to extend the array anyway.
+**This is the old version of the article, the new version using the native ZFS is now available here:  
+[Project Ares: Part V - RAID and data drives]({% post_url 2020-08-30-project-ares-part-5-ubuntu-on-zfs-raid %})**
 {% endcapture %}
 
 {% include notice level="warning" %}
@@ -190,65 +170,36 @@ grub-install --target=i386-pc ${DISK[2]}
 
 ### 2.4. Adding the Boot pool mirror
 
+- adding the boot partition mirror:
+
 ```bash
-# check the current pool status
-zpool status bpool
+# check the current array status
+mdadm --detail /dev/md1
 
 # attach the secondary disk partition
-zpool attach -f bpool ${DISK[1]}-part2 ${DISK[2]}-part2
+mdadm /dev/md1 --add ${DISK[2]}-part2
 
-# check the pool status to verify
+# check the array status to verify
 # - should see both attached
-zpool status bpool
-```
-
-- you should see output similar to (the following is from a VM testing machine):
-
-```
-pool: bpool
- state: ONLINE
-  scan: resilvered 277M in 0 days 00:00:01 with 0 errors on Thu Sep 17 23:27:31 2020
-config:
-
-        NAME                                     STATE     READ WRITE CKSUM
-        bpool                                    ONLINE       0     0     0
-          mirror-0                               ONLINE       0     0     0
-            pci-0000:00:10.0-scsi-0:0:0:0-part2  ONLINE       0     0     0
-            pci-0000:00:10.0-scsi-0:0:1:0-part2  ONLINE       0     0     0
+mdadm --detail /dev/md1
 ```
 
 ### 2.5. Adding the Root pool mirror
 
+- adding the root partition mirror:
+
 ```bash
-# check the current pool status
-zpool status rpool
+# check the current array status
+mdadm --detail /dev/md2
+
 
 # attach the secondary disk partition
-zpool attach -f rpool ${DISK[1]}-part3 ${DISK[2]}-part3
+mdadm /dev/md2 --add ${DISK[2]}-part3
 
-# check the pool status to verify
+# check the array status to verify
 # - should see both attached
-zpool status rpool
+mdadm --detail /dev/md2
 ```
-
-- the output will be like:
-
-```
-zpool status rpool
-  pool: rpool
- state: ONLINE
-  scan: resilvered 2.15G in 0 days 00:00:14 with 0 errors on Thu Sep 17 23:29:49 2020
-config:
-
-        NAME                                     STATE     READ WRITE CKSUM
-        rpool                                    ONLINE       0     0     0
-          mirror-0                               ONLINE       0     0     0
-            pci-0000:00:10.0-scsi-0:0:0:0-part3  ONLINE       0     0     0
-            pci-0000:00:10.0-scsi-0:0:1:0-part3  ONLINE       0     0     0
-```
-
-- note in particular, that the RAID only had to synchronize 2.15 GB which it has been able to do really fast  
-(MD-RAID would have to sync the whole partition, which is about 450 GB large)
 
 ### 2.6. Setting up the SWAP file
 
@@ -274,9 +225,9 @@ config:
 swapoff -a
 
 # create the swap MD array
-mdadm --create /dev/md0 -l 1 -n 2 -e 1.2 ${DISK[1]}-part4 ${DISK[2]}-part4
+mdadm --create /dev/md3 -l 1 -n 2 -e 1.2 ${DISK[1]}-part4 ${DISK[2]}-part4
 # check the array status
-mdadm --detail /dev/md0
+mdadm --detail /dev/md3
 ```
 
 **b) The swap encryption setup**:
@@ -293,34 +244,23 @@ mdadm --detail /dev/md0
 
 {% include notice level="danger" %}
 
-- for the hibernation to work the swap encryption key is added to the initramfs
+- for the hibernation to work the swap encryption key is added to the initramfs  
+(using the root partition key)
 - if you don't plan to use the hibernation, the encryption key can be loaded from the root directly (without putting it to the initramfs)
 
 ```bash
-# create the swap partition LUKS key
-# - using the Base64 encoding to only have printable chars in the key
-dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
-    > /etc/crypt/init/swap.key
-chmod go-rwx /etc/crypt/init/swap.key
-
 # setup the swap partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/swap.key /dev/md0
-cryptsetup luksOpen -d /etc/crypt/init/swap.key /dev/md0 swap
+    -d /etc/crypt/init/root.key /dev/md3
+cryptsetup luksOpen -d /etc/crypt/init/root.key /dev/md3 swap
 
 # make the swap filesystem
 mkswap /dev/mapper/swap
 
 # add the crypttab entry
 # (using "discard" to allow SSD TRIM commands)
-echo "swap /dev/md0 /etc/crypt/init/swap.key luks,discard" \
+echo "swap /dev/md3 /etc/crypt/init/root.key luks,discard,initramfs" \
     >> /etc/crypttab
-
-# add the key pattern to be included in the initramfs
-echo 'KEYFILE_PATTERN="/etc/crypt/init/*.key"' \
-    >> /etc/cryptsetup-initramfs/conf-hook
-# check it has been added properly
-less /etc/cryptsetup-initramfs/conf-hook
 ```
 
 **c) Finalizing the swap partition setup**:
@@ -370,7 +310,9 @@ prereqs)
     ;;
 esac
 
-mdadm --run /dev/md0
+mdadm --run /dev/md1
+mdadm --run /dev/md2
+mdadm --run /dev/md3
 EOF
 
 chmod +x /etc/initramfs-tools/scripts/local-top/md-boot
@@ -387,11 +329,8 @@ update-initramfs -c -k all
 lsinitramfs -l /boot/initrd.img-<tab-complete-the-img-path> | less
 # check for:
 # - the "cryptroot/crypttab" size
-# - the "etc/crypt/init/root.key" file
-# - the "etc/crypt/init/swap.key" file
-
-# reboot and test
-reboot
+# - the "cryptroot/keyfiles/zroot.key" file
+# - the "cryptroot/keyfiles/swap.key" file
 ```
 
 ## 3. Testing the system disk setup
@@ -448,58 +387,16 @@ Optionally (but strongly recommended) you can test if the system boots up in cas
 Check the status of the ZFS pools and MD-RAID, you should see results like:
 
 ```bash
-zpool status
+mdadm --detail /dev/md1
 ```
 
 ```
-  pool: bpool
- state: DEGRADED
-status: One or more devices could not be used because the label is missing or
-        invalid.  Sufficient replicas exist for the pool to continue
-        functioning in a degraded state.
-action: Replace the device using 'zpool replace'.
-   see: http://zfsonlinux.org/msg/ZFS-8000-4J
-  scan: resilvered 216K in 0 days 00:00:01 with 0 errors on Sat Sep 19 00:50:08 2020
-config:
-
-        NAME                                     STATE     READ WRITE CKSUM
-        bpool                                    DEGRADED     0     0     0
-          mirror-0                               DEGRADED     0     0     0
-            pci-0000:00:10.0-scsi-0:0:0:0-part2  ONLINE       0     0     0
-            2663801463946793175                  UNAVAIL      0     0     0  was /dev/disk/by-path/pci-0000:00:10.0-scsi-0:0:1:0-part2
-
-errors: No known data errors
-
-  pool: rpool
- state: DEGRADED
-status: One or more devices could not be used because the label is missing or
-        invalid.  Sufficient replicas exist for the pool to continue
-        functioning in a degraded state.
-action: Replace the device using 'zpool replace'.
-   see: http://zfsonlinux.org/msg/ZFS-8000-4J
-  scan: resilvered 8.92M in 0 days 00:00:00 with 0 errors on Sat Sep 19 00:50:05 2020
-config:
-
-        NAME                                     STATE     READ WRITE CKSUM
-        rpool                                    DEGRADED     0     0     0
-          mirror-0                               DEGRADED     0     0     0
-            pci-0000:00:10.0-scsi-0:0:0:0-part3  ONLINE       0     0     0
-            11116708511012010870                 UNAVAIL      0     0     0  was /dev/disk/by-path/pci-0000:00:10.0-scsi-0:0:1:0-part3
-
-errors: No known data errors
-```
-
-```bash
-mdadm --detail /dev/md0
-```
-
-```
-/dev/md0:
+/dev/md1:
            Version : 1.2
      Creation Time : Sun Aug 30 17:41:16 2020
         Raid Level : raid1
-        Array Size : 8383424 (8.00 GiB 8.58 GB)
-     Used Dev Size : 8383424 (8.00 GiB 8.58 GB)
+        Array Size : 2095856 (2.00 GiB 2.14 GB)
+     Used Dev Size : 2095856 (2.00 GiB 2.14 GB)
       Raid Devices : 2
      Total Devices : 1
        Persistence : Superblock is persistent
@@ -513,25 +410,30 @@ mdadm --detail /dev/md0
 
 Consistency Policy : resync
 
-              Name : ubuntu-test:0  (local to host ubuntu-test)
+              Name : ubuntu-test:1  (local to host ubuntu-test)
               UUID : e7eec08c:dd48273c:d753a245:07b201ea
             Events : 111
 
     Number   Major   Minor   RaidDevice State
-       0       8        4        0      active sync   /dev/sda4
+       0       8        4        0      active sync   /dev/sda2
        -       0        0        1      removed
-```
-
-- after done, clear the ZFS pool error status by:
-
-```bash
-zpool clear bpool
-zpool clear rpool
 ```
 
 ## 4. Setting up the RAID-5 data disks
 
 This section explains the RAID-5 data disks setup.
+
+The particular setup is as described in the [Part 3 (OS and filesystem)]({% post_url 2020-07-18-project-ares-part-3-os-and-file-system-considerations %}#52-the-data-disks):
+- mdraid RAID-5 array
+- encryption layer (I'll show the use of TrueCrypt / VeraCrypt, although LUKS can eventually be used as well)
+- ZFS on top of the encryption layer
+
+To recap, there are 2 main reasons to not use the native ZFS encryption and raid:
+1. Cannot expand existing RAID-5/6 (cannot add disks, needs to create a new RAID VDEV group instead) [^1]
+2. Reportedly poor performance of the native ZFS encryption [^2]
+
+The disadvantages of this solution:
+- the ZFS RAID would be able the synchronize on the filesystem level (knows which data are valid) thus much faster resyncing (mdraid needs to sync the whole block device as it doesn't have the knowledge which data are valid)
 
 ### 4.1. Preparing the environment
 
@@ -551,7 +453,7 @@ DISK[3]=/dev/disk/by-path/<tab-complete-the-disk-path>
 DISK[4]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
-### 4.2. Cleaning the disks
+### 4.2. Creating the partitions
 
 - we will create a single partition covering the entire disk for each of the RAID disks
 - the disk partition will then be used to create the array
@@ -569,9 +471,116 @@ sgdisk -p ${DISK[4]}
 # clear all existing partitions
 # (if having LVM volumes there, those need to be cleared first)
 for n in $(seq 1 4); do wipefs --all ${DISK[$n]} ; done
+
+# determine the maximal usable sector of each drive
+# (if the drives are not the same, will need to use the smallest one)
+for n in $(seq 1 4); do sgdisk -p ${DISK[$n]} | grep "last usable sector" ; done
 ```
 
-### 4.3. Creating the ZFS pool
+- here we determine the maximal usable sector, which is the minimal of the values printed by the above command
+- if the disks are the same, this will most likely be the same value for the other disks, otherwise take the minimal one
+
+{% capture notice_contents %}
+**<a name="data_part_warning">Warning</a>**:
+
+Even if all the disks are the same, it is recommended to use a safety margin, ie. making the disks smaller than the maximal available size.
+
+This can become important **if one disk fails and needs to be replaced**, you might then not be able to get the exact same disk. And as the **different disk models might have a slightly different capacity**, the new disk might be slightly smaller than the existing ones, thus would not being able to be used as a replacement for the failing disk.
+
+Therefore it is recommended to make the partition somewhat smaller than the maximal capacity [^4].
+{% endcapture %}
+
+{% include notice level="warning" %}
+
+```bash
+# All disks same: Use 8 MB less than the max available capacity
+for n in $(seq 1 4); do sgdisk -n1:0:-8M -t1:BF03 ${DISK[$n]} ; done
+
+# Not the same: Use the minimal sector
+# (eventually deduct 16384 sectors for 8 MB or adjust appropriately)
+DISK_SECT_MAX=<the min of the max sectors>
+for n in $(seq 1 4); do sgdisk -n1:0:${DISK_SECT_MAX} -t1:BF03 ${DISK[$n]} ; done
+
+# Print the partitions and check
+for n in $(seq 1 4); do sgdisk -p ${DISK[$n]} ; done
+```
+
+### 4.3. Setting up the array (mdraid)
+
+```bash
+# create the array
+mdadm --create /dev/md100 -l 5 -n 4 -e 1.2 -c 64 \
+    ${DISK[1]}-part1 \
+    ${DISK[2]}-part1 \
+    ${DISK[3]}-part1 \
+    ${DISK[4]}-part1
+
+# check the array status
+mdadm --detail /dev/md100
+```
+
+{% capture notice_contents %}
+**<a name="mdraid_note">Notes</a>**:
+
+- the above command shows the recommended settings for 4 RAID-5 drives
+- in particular, we explicitly set the array chunk size (the `"-c"` parameter) to 64 kiB, which is recommended for 4 disk underlying array for ZFS [^5]
+- for 8 disks the recommended value is 32 kiB
+{% endcapture %}
+
+{% include notice level="info" %}
+
+### 4.4. Encrypting the partition
+
+- in this case we show how to encrypt using the VeraCrypt instead of LUKS
+- the key is stored on the root partition (which itself is encrypted)
+
+```bash
+# install the VeraCrypt
+mkdir -p veracrypt && cd veracrypt
+
+# check https://www.veracrypt.fr/en/Downloads.html
+# for the newest version
+wget https://launchpad.net/veracrypt/trunk/1.24-update7/+download/veracrypt-1.24-Update7-setup.tar.bz2
+
+tar xjf veracrypt-1.24-Update7-setup.tar.bz2
+
+./veracrypt-1.24-Update7-setup-console-x64
+
+
+# generate the encryption key
+# (stored on the encrypted root partition)
+dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
+    > /etc/crypt/data-1.key
+
+chmod go-rwx /etc/crypt/data-1.key
+
+
+# encrypt the volume
+veracrypt -c --volume-type=normal /dev/md100 --encryption=aes --hash=sha-512 --filesystem=none --pim=0 -k /etc/crypt/data-1.key -p "" --random-source=/dev/urandom --quick
+
+# add the crypttab entry
+echo "data-1 /dev/md100 /dev/null tcrypt,tcrypt-veracrypt,tcrypt-keyfile=/etc/crypt/data-1.key,noearly" \
+    >> /etc/crypttab
+
+# start the encrypted disk
+cryptdisks_start data-1
+```
+
+- note the `"noearly"` option, which is important in this case (to start the decryption only after the MD RAID is already mounted)
+
+{% capture notice_contents %}
+**<a name="encrypt_note">Notes</a>**:
+
+- you can play with the encryption parameters (can choose a different encryption type, hash, PIM etc.)
+- using the `"--quick"` parameter: causes the volume just to be created, but not random filled (much faster, but less secure)
+- you can eventually remove it, but then creating the volume might take a very long time with very drives (in my case would be 32 TB which would take ages)
+{% endcapture %}
+
+{% include notice level="info" %}
+
+### 4.5. Creating the ZFS pool
+
+- now we can create the data pool and eventual datasets on top of the encrypted drive
 
 ```bash
 # create the "data" pool
@@ -585,76 +594,38 @@ zpool create -f \
     -O atime=off \
     -O relatime=on \
     -O xattr=sa \
-    -O mountpoint=none \
-    dpool \
-    raidz1 \
-    ${DISK[1]} \
-    ${DISK[2]} \
-    ${DISK[3]} \
-    ${DISK[4]}
+    -O mountpoint=/data \
+    data-pool \
+    /dev/mapper/data-1
 
 # for SSD: Set the auto-trim
-zpool set autotrim=on dpool
+zpool set autotrim=on data-pool
 
 # test the pool status
-zpool status dpool
+zpool status data-pool
 ```
 
-{% capture notice_contents %}
-**<a name="data_pool_note">Notes</a>**:
-
-- the array is created over the whole physical disks, which has some advantates for the ZFS maintenance
-(in particular, the ZFS subsystem can manage the disk itself, reportedly switching off the "standard" IO scheduler as it provides its own) [^8]
-- the ZFS subsystem still creates partitions over the disks, while leaving some small space at the end to accommodate for eventual slight disk size differences
-- the pool itself is not encrypted, the encryption will be done on the dataset level [^9]
-{% endcapture %}
-
-{% include notice level="info" %}
-
-### 4.4. Creating the encryption key
-
-- the key is stored on the root partition (which itself is encrypted)
-- the maximum key size for the native ZFS encryption is 32 bytes
-
-```bash
-# generate the encryption key
-# (stored on the encrypted root partition)
-dd if=/dev/urandom bs=32 skip=4 count=1 iflag=fullblock | hexdump -ve '/1 "%02x"' \
-    > /etc/crypt/zfs/data.key
-chmod go-rwx /etc/crypt/zfs/data.key
-```
-
-### 4.5. Creating the ZFS data sets
-
-- now we can create some datasets
+- then we can create some datasets
 - in particular, to organize stuff keep in mind that each separate dataset can create its own COW snapshots
-- note that you can eventually use different keys for separate encrypted datasets
 
 ```bash
 # create the main dataset
-zfs create \
-    -o canmount=off \
-    -o mountpoint=none \
-    dpool/DATA
+zfs create -o canmount=off -o mountpoint=none data-pool/DATA
 
 # create the main mount data set
-# (setting up the encryption)
 zfs create \
     -o canmount=noauto \
     -o mountpoint=/data \
-    -o encryption=aes-256-gcm \
-    -o keyformat=hex \
-    -o keylocation=file:///etc/crypt/zfs/data.key \
-    dpool/DATA/data
+    data-pool/DATA/data
 
 # create media data sets
 zfs create \
     -o com.ubuntu.zsys:bootfs=no \
-    dpool/DATA/data/media
+    data-pool/DATA/data/media
 
-zfs create dpool/DATA/data/media/movies
-zfs create dpool/DATA/data/media/pictures
-zfs create dpool/DATA/data/media/music
+zfs create data-pool/DATA/data/media/movies
+zfs create data-pool/DATA/data/media/pictures
+zfs create data-pool/DATA/data/media/music
 
 # etc. - create data sets as needed
 # ...
@@ -671,33 +642,6 @@ ls -al /data/media
 - note that all the data sets share the total space, so there is no need for thin provisioning  
 (it is eventually also possible to setup quota for particular data sets)
 
-### 4.6. Load the encryption key on boot
-
-- script to connect "regular" encrypted files:
-
-```bash
-  cat <<EOF > /etc/systemd/system/zfs-load-key.service
-
-[Unit]
-Description=Load encryption keys
-DefaultDependencies=no
-After=zfs-import.target
-Before=zfs-mount.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=zfs load-key -a
-
-[Install]
-WantedBy=zfs-mount.service
-EOF
-
-
-# enable the service
-systemctl enable zfs-load-key
-```
-
 ## 5. Next steps
 
 In the next part we'll setup the reporting (SMART etc.) and complete the basic system setup.
@@ -710,8 +654,5 @@ In the next part we'll setup the reporting (SMART etc.) and complete the basic s
 [^4]: [StackExchange: What's the difference between creating mdadm array using partitions or the whole disks directly](https://unix.stackexchange.com/a/323425)
 [^5]: [StackExchange: ZFS stripe on top of hardware RAID 6. What could possibly go wrong?](https://serverfault.com/a/816314)
 [^6]: [OpenZFS: Swap deadlock in 0.7.9](https://github.com/openzfs/zfs/issues/7734)
-[^7]: [OpenZFS: raidz expansion, alpha preview 1](https://github.com/openzfs/zfs/pull/8853)
-[^8]: [reddit: Formatting ZFS to use whole disk vs. partition](https://www.reddit.com/r/zfs/comments/enxxyx/formatting_zfs_to_use_whole_disk_vs_partition/)
-[^9]: [reddit: ZoL 0.8.0 encryption: don't encrypt the pool root!](https://www.reddit.com/r/zfs/comments/bnvdco/zol_080_encryption_dont_encrypt_the_pool_root/)
 
 {% include abbrev domain="computers" %}
