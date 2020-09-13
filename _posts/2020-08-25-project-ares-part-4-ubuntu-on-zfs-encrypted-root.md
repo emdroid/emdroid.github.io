@@ -315,7 +315,7 @@ DISK=/dev/disk/by-path/<tab-complete-the-disk-path>
 DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
-**d) Prepare the backup partition(s) on the secondary disk**:
+**d) Prepare the backup partition on the secondary disk**:
 - will be using the "`sgdisk`" command
 
 ```bash
@@ -329,56 +329,23 @@ sgdisk -p $DISK_2
 wipefs --all $DISK_2
 
 # create a new LVM partition for backing up the primary disk
-sgdisk -n1:0:0 -t1:8E00 $DISK_2
+sgdisk -n1:0:0 -t1:8300 $DISK_2
 
 # check by listing the partitions
 sgdisk -p $DISK_2
+
+# format the backup volume
+mkfs.xfs -f $DISK_2-part1
 ```
 
-**e) Create the LVM group to store the primary disk data**:
-
-```bash
-# create the physical volume
-pvcreate $DISK_2-part1
-
-# create the volume group called "backup"
-vgcreate backup $DISK_2-part1
-
-# check the partitions on the primary disk to see how many you have
-sgdisk -p $DISK
-# then create the following LVM partitions accordingly
-# (skip the first EFI / Microsoft 512 MB partition)
-
-# if having LVM in the list, use the "lvs" to list the current volumes
-lvs --noheadings -o <lv_path>
-
-# create the root volume
-lvcreate -L  10G backup -n root
-# if having any separate volumes (boot, home etc.)
-# create the volumes for them as well, for example:
-lvcreate -L 512M backup -n boot
-lvcreate -L  10G backup -n home
-# etc. - update the sizes as needed
-# (also according to the secondary drive space)
-
-# set a variable for the volume list
-# - for just one root partition (default installer options used)
-VOLUMES="root"
-# - for multiple partitions (add further volumes as needed)
-VOLUMES="root boot home"
-
-# create the file systems of the backup volumes (will use XFS)
-for v in $VOLUMES; do mkfs.xfs /dev/backup/$v ; done
-```
-
-**f) Prepare the mount points and mount the volumes**:
+**e) Prepare the mount points and mount the volumes**:
 
 - note that the first primary disk partition (marked as EPS / EFI) is not copied, we will re-create it afterwards  
 (if migrating a dual boot system, this might not work so well, then you actually might need to copy that partition too - this is outside of the scope of this guide)
 
 ```bash
 # create the mount points
-for s in system backup; do for v in $VOLUMES; do mkdir -p /mnt/$s/$v ; done ; done
+for s in system backup; do mkdir -p /mnt/$s ; done
 
 # list the primary disk partitions
 sgdisk -p $DISK
@@ -388,34 +355,33 @@ sgdisk -p $DISK
 
 # mount the primary volumes
 # (default setup creates just a single $DISK-part5 ext4 partition)
-mount $DISK-part5 /mnt/system/root
+mount $DISK-part5 /mnt/system
 # eventually the boot, home and other volumes, if any
+mount $DISK-part3 /mnt/system
 mount $DISK-part2 /mnt/system/boot
-mount $DISK-part3 /mnt/system/root
 mount $DISK-part4 /mnt/system/home
 # etc.
 
 # if having LVM volumes, mount them accordingly
 
-# mount the backup volumes
-for v in $VOLUMES; do mount /dev/backup/$v /mnt/backup/$v ; done
+# mount the backup volume
+mount $DISK_2-part1 /mnt/backup
 
 # test that the volumes are mounted
-mount | grep /mnt/system/
-mount | grep /mnt/backup/
+mount | grep /mnt/system
+mount | grep /mnt/backup
 ```
 
-**g) Copying the data**:
+**f) Copying the data**:
 - using "`rsync`" (copy including any attributes)
 
 ```bash
 # copy the data including all attributes
-for v in $VOLUMES; do rsync -avPX --exclude=/swapfile \
-  /mnt/system/$v/ /mnt/backup/$v/ ; done
+rsync -avPX --exclude=/swapfile /mnt/system/ /mnt/backup/
 
 # check the volume data look the same
-ls -al /mnt/system/root
-ls -al /mnt/backup/root
+ls -al /mnt/system
+ls -al /mnt/backup
 # eventually the boot and root volumes, if any
 ls -al /mnt/system/boot
 ls -al /mnt/backup/boot
@@ -424,10 +390,10 @@ ls -al /mnt/backup/home
 # etc.
 
 # unmount the volumes
-for s in system backup; do for v in $VOLUMES; do umount /mnt/$s/$v ; done ; done
+for s in system backup; do umount /mnt/$s ; done
 ```
 
-**h) Cleaning up the original data**:
+**g) Cleaning up the original data**:
 
 - this is only necessary if you originally had LVM volumes used in the existing installation
 
@@ -445,8 +411,7 @@ lvremove <vg_name>
 vgremove <vg_name>
 
 # remove the physical volume assignment
-# (use the appropriate partition number[s])
-pvremove $DISK-part2
+pvremove /dev/<tab-complete-the-partition-path>
 ```
 
 Now we are done with the system backup and prepared to perform the ZFS migration.
@@ -842,24 +807,16 @@ ls -al /target/home/
 
 {% include notice level="info" %}
 
-### 4.2. Copy the existing installation back from the LVM backup
+### 4.2. Copy the existing installation back from the backup
 
-**a) Mount the backup volumes**:
+**a) Mount the backup volume**:
 
 ```bash
-# use the "lvs" to list the backup volumes
-lvs --noheadings -o lv_path | grep backup
+# create the mount point
+mkdir -p /mnt/backup
 
-# set a variable for the volume list (add all backup volumes listed)
-VOLUMES="root"
-# or eventually
-VOLUMES="root boot home"
-
-# create the mount points
-for v in $VOLUMES; do mkdir -p /mnt/backup/$v ; done
-
-# mount the backup volumes
-for v in $VOLUMES; do mount /dev/backup/$v /mnt/backup/$v ; done
+# mount the backup volume
+mount $DISK_2-part1 /mnt/backup
 ```
 
 **b) Copy the installation onto the ZFS**:
@@ -868,11 +825,7 @@ for v in $VOLUMES; do mount /dev/backup/$v /mnt/backup/$v ; done
 
 ```bash
 # copy the installation root
-rsync -avhPXI --info=progress2 --exclude=/swapfile /mnt/backup/root/. /target/
-
-# eventually copy the other volumes if any
-rsync -avhPXI --info=progress2 /mnt/backup/boot/. /target/boot/
-rsync -avhPXI --info=progress2 /mnt/backup/home/. /target/home/
+rsync -avhPXI --info=progress2 --exclude=/swapfile /mnt/backup/. /target/
 
 # list the folders to check the data are copied properly
 ls -al /target/
@@ -1080,25 +1033,6 @@ reboot
 ```
 
 - make sure to remove the Ubuntu Live USB or DVD before rebooting
-
-### 4.4. Cleaning up
-
-If the system started properly after the reboot, it means the ZFS installation worked and the system is ready.
-
-If that is the case, the secondary drive can be cleaned up:
-
-```bash
-# enter the admin console
-sudo -i
-
-# remove the "backup" volumes and volume group
-lvremove -y backup
-vgremove -y backup
-
-# remove the physical volume assignment
-# (use the appropriate partition number[s])
-pvremove /dev/<tab-complete-the-partition-name>
-```
 
 Now the basic system installation should be ready.
 
