@@ -223,7 +223,36 @@ apt install -y \
     vim
 ```
 
-**c) Connect the Live Desktop USB and restart**:
+**c) Enable sudo access without password** (optional):
+
+- this setting allow the admin accounts to run the `"sudo"` commands without having to provide the password
+
+{% capture notice_contents %}
+**<a name="zfs-native-info">Security warning</a>**
+
+Allowing the admin users to run the `"sudo"` commands without password is a convenience, but **poses a security risk** - anyone who manages to access the computer with your user can then do virtually anything (without having to know the password).
+
+However in order to do that, the attacker still needs to gain access to the admin user account anyway.
+
+Also keep in mind that **anyone with the physical machine access** can eventually gain the root access anyway (eg. by booting in the single user mode and changing the root password to gain the access).
+The encrypted root makes it a bit harder, but still not impossible (especially when the **unattended boot** is required - in such case the encryption keys still needs to be available to the boot process so they can be eventually accessed).
+
+To truly protect the system the boot partition would either need to be password protected as well (implying having to provide the password on every boot), or the remote bootup SSH shell using eg. "dropbear" can be used (but it is still susceptible to the MITM attack as the SSH server private key then still needs to be in the initramfs).
+{% endcapture %}
+
+{% include notice level="danger" %}
+
+```bash
+# open the sudoers editor
+visudo
+
+# replace the line (edit):
+%sudo   ALL=(ALL:ALL) ALL
+# by:
+%sudo   ALL=(ALL:ALL) NOPASSWD: ALL
+```
+
+**d) Connect the Live Desktop USB and restart**:
 
 ```bash
 reboot
