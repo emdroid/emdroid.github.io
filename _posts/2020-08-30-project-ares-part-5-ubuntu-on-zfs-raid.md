@@ -303,7 +303,33 @@ swapon --summary
 echo "RESUME=/dev/mapper/swap" > /etc/initramfs-tools/conf.d/resume
 ```
 
-### 2.7. Updating the initram to contain all LUKS key entries
+### 2.7. Fixing the degraded array bootup
+
+There are currently some bugs in Ubuntu which prevent booting from degraded arrays.
+To fix, the following initramfs file needs to be created ([see here for details](https://feeding.cloud.geek.nz/posts/installing-ubuntu-bionic-on-encrypted-raid1/)):
+
+```bash
+cat <<EOF > /etc/initramfs-tools/scripts/local-top/md-boot
+#!/bin/sh
+PREREQ="mdadm"
+prereqs()
+{
+    echo "\$PREREQ"
+}
+case \$1 in
+prereqs)
+    prereqs
+    exit 0
+    ;;
+esac
+
+mdadm --run /dev/md0
+EOF
+
+chmod +x /etc/initramfs-tools/scripts/local-top/md-boot
+```
+
+### 2.8. Updating the initram to contain all LUKS key entries
 
 ```bash
 # re-create the initramfs image
