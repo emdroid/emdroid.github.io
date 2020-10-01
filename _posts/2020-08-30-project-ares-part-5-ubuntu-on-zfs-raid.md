@@ -63,8 +63,8 @@ sudo -i
 ```
 
 **c) Set the variables for the disks being used**:
-- **DISK**: The primary drive
-- **DISK_2**: The secondary drive
+- **DISK[1]**: The primary drive
+- **DISK[2]**: The secondary drive
 - use your disk ids as appropriate
 
 ```bash
@@ -75,9 +75,9 @@ ls -al /dev/disk/by-path/
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
 # the secondary drive
-DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 ### 2.2. Partitioning the secondary drive
@@ -88,25 +88,25 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 ```bash
 # list the existing partitions on the primary disk
-sgdisk -p $DISK_2
+sgdisk -p ${DISK[2]}
 # !!! double check it is the correct drive you want to use !!!
-# (otherwise change the DISK variable appropriately)
+# (otherwise change the DISK[2] variable appropriately)
 
 # remove any existing partitions
 # (note that if there are any LVM volumes currently active,
 #  they should be removed first)
-wipefs --all $DISK_2
+wipefs --all ${DISK[2]}
 
 # clone the partitions of the primary drive
-sgdisk -R $DISK_2 $DISK
+sgdisk -R ${DISK[2]} ${DISK[1]}
 
 # set a new random disk GUID of the secondary drive
-sgdisk -G $DISK_2
+sgdisk -G ${DISK[2]}
 
 # check by listing the partitions
-sgdisk -p $DISK_2
+sgdisk -p ${DISK[2]}
 # compare with the primary drive
-sgdisk -p $DISK
+sgdisk -p ${DISK[1]}
 ```
 
 ### 2.3. Copying the EFI / GPT partition and install the boot loader
@@ -119,7 +119,7 @@ sgdisk -p $DISK
 **a) Copy the EFI / GPT partition**:
 
 ```bash
-dd if=$DISK-part1 of=$DISK_2-part1 bs=1M
+dd if=${DISK[1]}-part1 of=${DISK[2]}-part1 bs=1M
 ```
 
 **b) Install the GRUB boot loader**:
@@ -129,7 +129,7 @@ dd if=$DISK-part1 of=$DISK_2-part1 bs=1M
 ```bash
 # mount the secondary EFI
 mkdir -p /boot/efi2
-mount $DISK_2-part1 /boot/efi2
+mount ${DISK[2]}-part1 /boot/efi2
 
 # install the EFI
 grub-install --target=x86_64-efi --efi-directory=/boot/efi2 \
@@ -142,7 +142,7 @@ less /boot/efi2/EFI/ubuntu/grub.cfg
 efibootmgr -v
 
 # eventually add a nicer Ubuntu entry
-efibootmgr --create --disk $DISK_2-part1 --loader '\EFI\UBUNTU\SHIMX64.EFI' --label "Ubuntu Linux (Backup)"
+efibootmgr --create --disk ${DISK[2]}-part1 --loader '\EFI\UBUNTU\SHIMX64.EFI' --label "Ubuntu Linux (Backup)"
 
 # eventually delete the other unwanted entries
 # !!! make sure to keep the primary and secondary entry !!!
@@ -153,7 +153,7 @@ efibootmgr -Bb nnnn
 
 ```bash
 # install the grub
-grub-install --target=i386-pc $DISK_2
+grub-install --target=i386-pc ${DISK[2]}
 ```
 
 ### 2.4. Adding the Boot pool mirror
@@ -165,7 +165,7 @@ grub-install --target=i386-pc $DISK_2
 zpool status bpool
 
 # attach the secondary disk partition
-zpool attach -f bpool $DISK-part2 $DISK_2-part2
+zpool attach -f bpool ${DISK[1]}-part2 ${DISK[2]}-part2
 
 # check the pool status to verify
 # - should see both attached
@@ -179,11 +179,11 @@ zpool status bpool
 ```bash
 # setup the secondary root partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/root.key $DISK_2-part3
+    -d /etc/crypt/init/root.key ${DISK[2]}-part3
 cryptsetup luksOpen -d /etc/crypt/init/root.key $DISK_2-part3 zroot-2
 
 # add the crypttab entry
-echo "zroot-2 UUID=$(blkid -s UUID -o value $DISK_2-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
+echo "zroot-2 UUID=$(blkid -s UUID -o value ${DISK[2]}-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
     >> /etc/crypttab
 ```
 
@@ -233,7 +233,7 @@ zpool status rpool
 swapoff -a
 
 # create the swap MD array
-mdadm --create /dev/md0 -l 1 -n 2 -e 1.2 $DISK-part4 $DISK_2-part4
+mdadm --create /dev/md0 -l 1 -n 2 -e 1.2 ${DISK[1]}-part4 ${DISK[2]}-part4
 # check the array status
 mdadm --detail /dev/md0
 ```

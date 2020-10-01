@@ -327,8 +327,8 @@ sudo -i
 ```
 
 **c) Set the variables for the disks being used**:
-- **DISK**: The primary drive
-- **DISK_2**: The secondary backup drive
+- **DISK[1]**: The primary drive
+- **DISK[2]**: The secondary backup drive
 - use your disk ids as appropriate
 
 ```bash
@@ -339,9 +339,9 @@ ls -al /dev/disk/by-path/
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
 # the secondary drive
-DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 **d) Prepare the backup partition on the secondary disk**:
@@ -349,22 +349,22 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 ```bash
 # list the existing partitions
-sgdisk -p $DISK_2
+sgdisk -p ${DISK[2]}
 # !!! double check it is the correct secondary drive you want to use !!!
-# (otherwise change the DISK2 variable appropriately)
+# (otherwise change the DISK[2] variable appropriately)
 
 # remove any existing partitions
 # (note that if there are any LVM volumes currently active, they'd need to be removed first)
-wipefs --all $DISK_2
+wipefs --all ${DISK[2]}
 
 # create a new LVM partition for backing up the primary disk
-sgdisk -n1:0:0 -t1:8300 $DISK_2
+sgdisk -n1:0:0 -t1:8300 ${DISK[2]}
 
 # check by listing the partitions
-sgdisk -p $DISK_2
+sgdisk -p ${DISK[2]}
 
 # format the backup volume
-mkfs.xfs -f $DISK_2-part1
+mkfs.xfs -f ${DISK[2]}-part1
 ```
 
 **e) Prepare the mount points and mount the volumes**:
@@ -377,24 +377,24 @@ mkfs.xfs -f $DISK_2-part1
 for s in system backup; do mkdir -p /mnt/$s ; done
 
 # list the primary disk partitions
-sgdisk -p $DISK
+sgdisk -p ${DISK[1]}
 # - if you have just one, it will be the root partition
 # - otherwise check the sizes which one is the root/boot/eventually home etc.
 #   (skip the first EFI / Microsoft 512 MB partition)
 
 # mount the primary volumes
-# (default setup creates just a single $DISK-part5 ext4 partition)
-mount $DISK-part5 /mnt/system
+# (default setup creates just a single ${DISK[1]}-part5 ext4 partition)
+mount ${DISK[1]}-part5 /mnt/system
 # eventually the boot, home and other volumes, if any
-mount $DISK-part3 /mnt/system
-mount $DISK-part2 /mnt/system/boot
-mount $DISK-part4 /mnt/system/home
+mount ${DISK[1]}-part3 /mnt/system
+mount ${DISK[1]}-part2 /mnt/system/boot
+mount ${DISK[1]}-part4 /mnt/system/home
 # etc.
 
 # if having LVM volumes, mount them accordingly
 
 # mount the backup volume
-mount $DISK_2-part1 /mnt/backup
+mount ${DISK[2]}-part1 /mnt/backup
 
 # test that the volumes are mounted
 mount | grep /mnt/system
@@ -495,8 +495,8 @@ systemctl stop zed
 
 **d) Set the variables for the disks being used** (if not already done):
 
-- **DISK**: The primary drive
-- **DISK_2**: The secondary backup drive
+- **DISK[1]**: The primary drive
+- **DISK[2]**: The secondary backup drive
 - use your disk ids as appropriate
 
 ```bash
@@ -507,9 +507,9 @@ ls -al /dev/disk/by-path/
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
 # the secondary drive
-DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 **e) Repartition the primary disk**:
@@ -520,35 +520,35 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 
 ```bash
 # list the existing partitions on the primary disk
-sgdisk -p $DISK
+sgdisk -p ${DISK[1]}
 # !!! double check it is the correct drive you want to use !!!
-# (otherwise change the DISK variable appropriately)
+# (otherwise change the DISK[1] variable appropriately)
 
 # remove any existing partitions
 # (note that if there are any LVM volumes currently active,
 #  they should be removed first)
-wipefs --all $DISK
+wipefs --all ${DISK[1]}
 
 # UEFI Bios: create the EFI partition
-sgdisk -n1:0:+512M -t1:EF00 $DISK
+sgdisk -n1:0:+512M -t1:EF00 ${DISK[1]}
 
 # Non-UEFI Bios: create the GRUB partition
 # (needed for GPT)
-sgdisk -n1:0:+512M -t1:EF02 $DISK
+sgdisk -n1:0:+512M -t1:EF02 ${DISK[1]}
 
 # create the ZFS boot partition
-sgdisk -n2:0:+2G -t2:BE00 $DISK
+sgdisk -n2:0:+2G -t2:BE00 ${DISK[1]}
 
 # create the ZFS root partition
 # leaving space for the SWAP hibernation partition
 # (see notes below)
-sgdisk -n3:0:-72G -t3:BF00 $DISK
+sgdisk -n3:0:-72G -t3:BF00 ${DISK[1]}
 
 # create the SWAP partition
-sgdisk -n4:0:0 -t4:8200 $DISK
+sgdisk -n4:0:0 -t4:8200 ${DISK[1]}
 
 # check by listing the partitions
-sgdisk -p $DISK
+sgdisk -p ${DISK[1]}
 ```
 
 {% capture notice_contents %}
@@ -587,7 +587,7 @@ However note that to be able to start if the primary disk fails, those extra par
 
 ```bash
 # UEFI only: format the EFI partition
-mkdosfs -F 32 -s 1 -n EFS $DISK-part1
+mkdosfs -F 32 -s 1 -n EFS ${DISK[1]}-part1
 
 # prepare the temporary target directory
 mkdir -p /target
@@ -600,8 +600,8 @@ dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
 
 # setup the root partition encryption
 cryptsetup luksFormat -q -c aes-xts-plain64 -s 512 -h sha256 \
-    -d /etc/crypt/init/root.key $DISK-part3
-cryptsetup luksOpen -d /etc/crypt/init/root.key $DISK-part3 zroot-1
+    -d /etc/crypt/init/root.key ${DISK[1]}-part3
+cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK[1]}-part3 zroot-1
 ```
 
 {% capture notice_contents %}
@@ -656,7 +656,7 @@ zpool create -f \
     -O mountpoint=/boot \
     -R /target \
     bpool \
-    $DISK-part2
+    ${DISK[1]}-part2
 
 # test the pool status
 zpool status bpool
@@ -845,7 +845,7 @@ ls -al /target/home/
 mkdir -p /mnt/backup
 
 # mount the backup volume
-mount $DISK_2-part1 /mnt/backup
+mount ${DISK[2]}-part1 /mnt/backup
 ```
 
 **b) Copy the installation onto the ZFS**:
@@ -877,11 +877,11 @@ chmod -R go-rwx /target/etc/crypt
 
 ```bash
 # UEFI Bios only: add the new EFI partition to the fstab
-echo "UUID=$(blkid -s UUID -o value $DISK-part1) /boot/efi vfat noauto,umask=0077,fmask=0077,dmask=0077 0 1" \
+echo "UUID=$(blkid -s UUID -o value ${DISK[1]}-part1) /boot/efi vfat noauto,umask=0077,fmask=0077,dmask=0077 0 1" \
     >> /target/etc/fstab
 
 # add the root entry to the crypttab
-echo "zroot-1 UUID=$(blkid -s UUID -o value $DISK-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
+echo "zroot-1 UUID=$(blkid -s UUID -o value ${DISK[1]}-part3) /etc/crypt/init/root.key luks,discard,initramfs,nofail,x-systemd.device-timeout=3" \
     >> /target/etc/crypttab
 
 # setup some basic protection of the encryption keys
@@ -999,7 +999,7 @@ less /boot/efi/EFI/ubuntu/grub.cfg
 efibootmgr -v
 
 # eventually add a nicer Ubuntu entry
-efibootmgr --create --disk $DISK-part1 --loader '\EFI\UBUNTU\SHIMX64.EFI' --label "Ubuntu Linux"
+efibootmgr --create --disk ${DISK[1]}-part1 --loader '\EFI\UBUNTU\SHIMX64.EFI' --label "Ubuntu Linux"
 
 # eventually delete the other unwanted entries
 efibootmgr -Bb nnnn
@@ -1009,7 +1009,7 @@ efibootmgr -Bb nnnn
 
 ```bash
 # install the grub
-grub-install --target=i386-pc $DISK
+grub-install --target=i386-pc ${DISK[1]}
 ```
 
 **h) Finalize the ZFS setup**:
@@ -1098,8 +1098,8 @@ systemctl stop zed
 ```
 
 **d) Set the variables for the disk being used**:
-- **DISK**: The primary drive
-- **DISK_2**: The secondary drive
+- **DISK[1]**: The primary drive
+- **DISK[2]**: The secondary drive
 - use your disk ids as appropriate
 
 ```bash
@@ -1110,9 +1110,9 @@ ls -al /dev/disk/by-path/
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
 # the secondary drive
-DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
 ```
 
 **e) Decrypt the root partition**:
@@ -1122,7 +1122,7 @@ DISK_2=/dev/disk/by-path/<tab-complete-the-disk-path>
 - then use the key to decrypt the partition
 
 ```bash
-cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK}-part3 zroot-1
+cryptsetup luksOpen -d /etc/crypt/init/root.key ${DISK[1]}-part3 zroot-1
 ```
 
 **f) Mound the ZFS volumes**:
