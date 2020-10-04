@@ -62,13 +62,7 @@ What will be done here:
 sudo -i
 ```
 
-**c) Install the necessary packages**:
-
-```bash
-apt install -y gdisk
-```
-
-**d) Set the variables for the disks being used**:
+**c) Set the variables for the disks being used**:
 - **DISK**: The primary drive
 - **DISK_2**: The secondary drive
 - use your disk ids as appropriate
@@ -404,14 +398,6 @@ The disadvantages of this solution:
 - the ZFS RAID would be able the synchronize on the filesystem level (knows which data are valid) thus much faster resyncing (mdraid needs to sync the whole block device as it doesn't have the knowledge which data are valid)
 
 ### 4.1. Preparing the environment
-
-**a) Install the necessary packages**:
-
-```bash
-apt install -y gdisk
-```
-
-**b) Set the variables for the disks being used**:
 
 - **DISK[1]** - **DISK[4]**: The disks to be used for the array
 - use your disk ids as appropriate
