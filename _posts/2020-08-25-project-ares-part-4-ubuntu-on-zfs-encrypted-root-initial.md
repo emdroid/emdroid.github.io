@@ -629,7 +629,7 @@ mkdir -p /target
 # create the root partition LUKS key
 # - using the Base64 encoding to only have printable chars in the key
 mkdir -p /etc/crypt/init
-dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
+dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 -w 0 \
     > /etc/crypt/init/root.key
 
 # setup the root partition encryption

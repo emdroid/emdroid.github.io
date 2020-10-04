@@ -549,7 +549,7 @@ tar xjf veracrypt-1.24-Update7-setup.tar.bz2
 
 # generate the encryption key
 # (stored on the encrypted root partition)
-dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
+dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 -w 0 \
     > /etc/crypt/data-1.key
 
 chmod go-rwx /etc/crypt/data-1.key

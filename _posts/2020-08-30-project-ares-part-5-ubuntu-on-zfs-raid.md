@@ -299,7 +299,7 @@ mdadm --detail /dev/md0
 ```bash
 # create the swap partition LUKS key
 # - using the Base64 encoding to only have printable chars in the key
-dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 \
+dd if=/dev/urandom bs=512 skip=4 count=4 iflag=fullblock | base64 -w 0 \
     > /etc/crypt/init/swap.key
 chmod go-rwx /etc/crypt/init/swap.key
 
