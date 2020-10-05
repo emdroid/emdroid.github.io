@@ -530,22 +530,22 @@ sgdisk -p ${DISK[1]}
 wipefs --all ${DISK[1]}
 
 # UEFI Bios: create the EFI partition
-sgdisk -n1:0:+512M -t1:EF00 ${DISK[1]}
+sgdisk -n1:0:+512M -t1:EF00 -c1:"EFI System Partition" ${DISK[1]}
 
 # Non-UEFI Bios: create the GRUB partition
 # (needed for GPT)
-sgdisk -n1:0:+512M -t1:EF02 ${DISK[1]}
+sgdisk -n1:0:+512M -t1:EF02 -c1:"BIOS Boot" ${DISK[1]}
 
 # create the ZFS boot partition
-sgdisk -n2:0:+2G -t2:BE00 ${DISK[1]}
+sgdisk -n2:0:+2G -t2:BE00 -c2:"ZFS Boot" ${DISK[1]}
 
 # create the ZFS root partition
 # leaving space for the SWAP hibernation partition
 # (see notes below)
-sgdisk -n3:0:-72G -t3:BF00 ${DISK[1]}
+sgdisk -n3:0:-72G -t3:BF00 -c3:"ZFS Root" ${DISK[1]}
 
 # create the SWAP partition
-sgdisk -n4:0:0 -t4:8200 ${DISK[1]}
+sgdisk -n4:0:0 -t4:8200 -c4:"Swap" ${DISK[1]}
 
 # check by listing the partitions
 sgdisk -p ${DISK[1]}
