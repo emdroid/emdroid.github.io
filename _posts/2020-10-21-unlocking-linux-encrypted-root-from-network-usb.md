@@ -616,19 +616,21 @@ mkdir -p /etc/crypt/scripts
 
 load_az() {
     # eventual errors should go to stderr
-    $(which curl) --insecure -s '${ROOT_KEY_SAS}'
+    curl --insecure -s '${ROOT_KEY_SAS}'
 }
 
 load_usb() {
     [ -b /dev/usbkey ] || return 1
     
     # if device exists then output the keyfile from the usb key 
-    $(which dd) if=/dev/usbkey bs=512 skip=4 count=4 | $(which base64) -w 0
+    dd if=/dev/usbkey bs=512 skip=4 count=4 | base64 -w 0
 }
 
 get_key() {
     load_az || load_usb
 }
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 get_key
 EOF
@@ -702,19 +704,21 @@ mkdir -p /etc/crypt/scripts
 
 load_az() {
     # eventual errors should go to stderr
-    $(which curl) --insecure -s '${ROOT_KEY_SAS}'
+    curl --insecure -s '${ROOT_KEY_SAS}'
 }
 
 load_usb() {
     [ -b /dev/usbkey ] || return 1
     
     # if device exists then output the keyfile from the usb key 
-    $(which dd) if=/dev/usbkey bs=512 skip=4 count=4 | $(which base64) -w 0
+    dd if=/dev/usbkey bs=512 skip=4 count=4 | base64 -w 0
 }
 
 get_key() {
     load_az || load_usb
 }
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 get_key
 EOF
