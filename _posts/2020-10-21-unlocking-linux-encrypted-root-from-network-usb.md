@@ -318,7 +318,7 @@ There are two options, either enabling all USB drives or only a selected one.
 echo 'SUBSYSTEMS=="usb", DRIVERS=="usb", SYMLINK+="usbkey%n"' \
     > /etc/udev/rules.d/99-custom-usb.rules
 
-# reload the rule
+# reload the udev rules
 udevadm control --reload-rules
 ```
 
@@ -340,7 +340,7 @@ udevadm info -a -p $(udevadm info -q path -n /dev/sdf) | less
 echo 'SUBSYSTEMS=="usb", DRIVERS=="usb", ATTRS{manufacturer}=="Corsair", ATTRS{product}=="Voyager SliderX1", ATTRS{serial}=="AAWKGXCFDFRRFBWG", SYMLINK+="usbkey%n"' \
     > /etc/udev/rules.d/99-custom-usb.rules
 
-# reload the rule
+# reload the udev rules
 udevadm control --reload-rules
 ```
 
@@ -692,7 +692,7 @@ _The swap key script_:
 # set the SAS token URL
 # (replace the <sas_token_url> by your URL)
 # !!! IMPORTANT: Use the apostrophes to avoid special char interpretations !!!
-ROOT_KEY_SAS='<sas_token_url>'
+SWAP_KEY_SAS='<sas_token_url>'
 
 
 # create the swap key script
@@ -704,7 +704,7 @@ mkdir -p /etc/crypt/scripts
 
 load_az() {
     # eventual errors should go to stderr
-    curl --insecure -s '${ROOT_KEY_SAS}'
+    curl --insecure -s '${SWAP_KEY_SAS}'
 }
 
 load_usb() {
@@ -812,13 +812,13 @@ apt install -y mdadm zfsutils-linux
 
 ```bash
 # a) the native ZFS option
-curl --insecure -s 'your-root-key-sas' > /etc/crypt/zfs/root.key
+curl --insecure -s '<your-root-key-sas>' > /etc/crypt/zfs/root.key
 
 # b) the LUKS root option
-curl --insecure -s 'your-root-key-sas' > /etc/crypt/root.key
+curl --insecure -s '<your-root-key-sas>' > /etc/crypt/root.key
 
 # c) the swap LUKS key (if any)
-curl --insecure -s 'your-root-key-sas' > /etc/crypt/swap.key
+curl --insecure -s '<your-swap-key-sas>' > /etc/crypt/swap.key
 ```
 
 - load the encryption keys:
@@ -841,8 +841,6 @@ cryptsetup luksOpen -d /etc/crypt/swap.key /dev/md3 swap
 (if not using ZFS, mount the root drive via the regular mount command):
 
 ```bash
-mkdir -p /target
-
 # create the target dir
 mkdir /target
 
