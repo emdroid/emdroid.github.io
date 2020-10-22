@@ -293,7 +293,7 @@ mdadm --detail /dev/md0
 
 {% include notice level="danger" %}
 
-- for the hibernation to work the swap encryption key is added to the initramfs
+- <a name="keys_swap"></a>for the hibernation to work the swap encryption key is added to the initramfs
 - if you don't plan to use the hibernation, the encryption key can be loaded from the root directly (without putting it to the initramfs)
 
 ```bash

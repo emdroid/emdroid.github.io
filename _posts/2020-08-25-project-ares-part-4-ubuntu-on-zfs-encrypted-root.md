@@ -617,7 +617,7 @@ However note that to be able to start if the primary disk fails, those extra par
 
 {% include notice level="warning" %}
 
-**f) Generate the encryption keys**:
+**f) <a name="keys_generate"></a>Generate the encryption keys**:
 
 - using the `"hexdump"` command to convert the raw binary keys to hex format  
 (in order to only include "printable" chars)
@@ -935,7 +935,9 @@ echo "UMASK=0077" \
 echo "RESUME=none" > /target/etc/initramfs-tools/conf.d/resume
 ```
 
-- create the initrd script to copy the init level key files:
+- <a name="keys_initramfs"></a>create the initrd script to copy the init level key files:
+
+(note this step should be skipped if the remote key loading is being used - the keys shouldn't go into the initramfs then)
 
 ```bash
   cat <<EOF > /target/etc/initramfs-tools/hooks/zfs-crypt
