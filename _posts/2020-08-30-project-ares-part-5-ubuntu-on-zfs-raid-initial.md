@@ -81,15 +81,15 @@ sudo -i
 
 ```bash
 # prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
 # the secondary drive
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 ### 2.2. Partitioning the secondary drive
@@ -442,15 +442,15 @@ The disadvantages of this solution:
 
 ```bash
 # prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN" if any)
 
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[3]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[4]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[3]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[4]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 ### 4.2. Creating the partitions

@@ -100,16 +100,16 @@ sudo -i
 - use your disk ids as appropriate
 
 ```bash
-# prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+# prefer to use the disk-by-id to avoid confusion with the disk assignment
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
 # the secondary drive
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 ### 2.2. Partitioning the secondary drive
@@ -466,7 +466,7 @@ config:
         bpool                                    DEGRADED     0     0     0
           mirror-0                               DEGRADED     0     0     0
             pci-0000:00:10.0-scsi-0:0:0:0-part2  ONLINE       0     0     0
-            2663801463946793175                  UNAVAIL      0     0     0  was /dev/disk/by-path/pci-0000:00:10.0-scsi-0:0:1:0-part2
+            2663801463946793175                  UNAVAIL      0     0     0  was /dev/disk/by-id/pci-0000:00:10.0-scsi-0:0:1:0-part2
 
 errors: No known data errors
 
@@ -484,7 +484,7 @@ config:
         rpool                                    DEGRADED     0     0     0
           mirror-0                               DEGRADED     0     0     0
             pci-0000:00:10.0-scsi-0:0:0:0-part3  ONLINE       0     0     0
-            11116708511012010870                 UNAVAIL      0     0     0  was /dev/disk/by-path/pci-0000:00:10.0-scsi-0:0:1:0-part3
+            11116708511012010870                 UNAVAIL      0     0     0  was /dev/disk/by-id/pci-0000:00:10.0-scsi-0:0:1:0-part3
 
 errors: No known data errors
 ```
@@ -539,16 +539,16 @@ This section explains the RAID-5 data disks setup.
 - use your disk ids as appropriate
 
 ```bash
-# prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+# prefer to use the disk-by-id to avoid confusion with the disk assignment
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN" if any)
 
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[3]=/dev/disk/by-path/<tab-complete-the-disk-path>
-DISK[4]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[3]=/dev/disk/by-id/<tab-complete-the-disk-path>
+DISK[4]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 ### 4.2. Cleaning the disks
