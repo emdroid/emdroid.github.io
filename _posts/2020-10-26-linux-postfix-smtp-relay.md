@@ -265,9 +265,46 @@ systemctl restart postfix
 
 - note that we no longer have to set the sender address via the `"-r"` parameter
 
-## 5. Troubleshooting
+## 5. Local user aliases (optional)
 
-**5.1. Checking the logs**
+This can be used to forward the mail sent to local users (e.g. "root") to an external address (e.g. "_destination.user@gmail.com_").  
+This is optional, but **highly recommended**.
+
+Note than until here, we were setting up the **sender address** (the mail address the notifications are sent _*from*_), this step is about setting up the **target address** (destination - the mail address the notifications are sent _*to*_).
+
+In particular, most of the Linux system notifications are sent to the "root" user by default.
+The tools usually allow to change the destination e-mail address (so that the notifications will be delivered to the chosen external address instead of just locally to "root" where no-one will read them).
+
+However if you setup the aliases, you **don't have to change the system defaults** for the tools, so they **can still keep sending the notifications to "root"**, but they will be **forwarded** to your external address of choice automagically.
+
+```bash
+# edit the e-mail aliases
+vim /etc/aliases
+
+# add the aliases, for example (for root):
+root:          <destination.user>@gmail.com
+
+# generate the db
+postalias /etc/aliases
+```
+
+**5.3. Testing the setup**
+
+```bash
+# restart the postfix service to pick up the new settings
+systemctl restart postfix
+
+# send the test e-mail
+  echo "Testing sending mail via SMTP relay (target address translation)." | mail \
+    -s "Test notification" \
+    root
+```
+
+- note here that we are trying to send the e-mail to the "root" user - the alias should be taken and the mail forwarded to the other (external) address
+
+## 6. Troubleshooting
+
+**6.1. Checking the logs**
 
 - check the "syslog" to see the messages being sent, or any sending errors  
   (recommended to open in a separate shell window):
