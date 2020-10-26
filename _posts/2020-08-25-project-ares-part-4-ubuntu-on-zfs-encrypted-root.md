@@ -363,16 +363,16 @@ sudo -i
 - use your disk ids as appropriate
 
 ```bash
-# prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+# prefer to use the disk-by-id to avoid confusion with the disk assignment
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
 # the secondary drive
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 **d) Prepare the backup partition on the secondary disk**:
@@ -531,16 +531,16 @@ systemctl stop zed
 - use your disk ids as appropriate
 
 ```bash
-# prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+# prefer to use the disk-by-id to avoid confusion with the disk assignment
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
 # the secondary drive
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 **e) Repartition the primary disk**:
@@ -1163,16 +1163,16 @@ systemctl stop zed
 - use your disk ids as appropriate
 
 ```bash
-# prefer to use the disk-by-path to avoid confusion with the disk assignment
-ls -al /dev/disk/by-path/
+# prefer to use the disk-by-id to avoid confusion with the disk assignment
+ls -al /dev/disk/by-id/
 
 # set the disk ids appropriately
 # (use the physical disk links without the "-partN")
 
 # the primary drive
-DISK[1]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[1]=/dev/disk/by-id/<tab-complete-the-disk-path>
 # the secondary drive
-DISK[2]=/dev/disk/by-path/<tab-complete-the-disk-path>
+DISK[2]=/dev/disk/by-id/<tab-complete-the-disk-path>
 ```
 
 **e) Decrypt the root partition**:
