@@ -23,6 +23,7 @@
 *[NGFF]: m.2 SSD form factor ("Next Generation Form Factor")
 *[WD]: "Western Digital" disk manufacturer
 *[TRIM]: The SSD "garbage collection" support technology
+*[SMR]: Shingled Magnetic Recording
 
 *[CD]: Compact Disk
 *[DVD]: Digital Versatile Disk
@@ -82,6 +83,8 @@
 *[BtrFS]: Linux CoW File System
 *[ZFS]: Sun Microsystems File System (initially Solaris-only)
 *[ZoL]: ZFS on Linux
+*[LVM]: Logical Volume Management
+*[SMART]: Self-Monitoring, Analysis, and Reporting Technology
 
 *[VM]: Virtual Machine
 
