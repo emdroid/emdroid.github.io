@@ -14,7 +14,10 @@
 
 *[HDD]: Hard Disk Drive
 *[SSD]: Solid-State Drive
-*[SATA]: Serial ATA interface
+*[SATA]: Serial ATA disk interface
+*[PATA]: Parallel ATA disk interface
+*[IDE]: Integrated Drive Electronics disk interface
+*[ATA]: Advanced Technology Attachment disk interface
 *[SAS]: Serial Attached SCSI ("Small Computer System Interface")
 *[SCSI]: Peripheral devices standard ("Small Computer System Interface")
 *[HBA]: Host Bus Adapter
@@ -24,6 +27,11 @@
 *[WD]: "Western Digital" disk manufacturer
 *[TRIM]: The SSD "garbage collection" support technology
 *[SMR]: Shingled Magnetic Recording
+*[SMART]: Self-Monitoring, Analysis, and Reporting Technology
+*[TLER]: Time Limited Error Recovery
+*[CCTL]: Command Completion Time Limit
+*[ERC]: Error Recovery Control
+*[MTBF]: Mean Time Between Failure
 
 *[CD]: Compact Disk
 *[DVD]: Digital Versatile Disk
@@ -91,7 +99,6 @@
 *[ZFS]: Sun Microsystems File System (initially Solaris-only)
 *[ZoL]: ZFS on Linux
 *[LVM]: Logical Volume Management
-*[SMART]: Self-Monitoring, Analysis, and Reporting Technology
 
 *[VM]: Virtual Machine
 
