@@ -38,7 +38,7 @@ In addition to the primary new 4 x 8 TB disks, I still had these other disks lyi
 
 As you can see, those disks are of very different manufacturers, sizes and formats.
 
-The 3 x 3.5" disks were taken from the original NAS box (were not in a RAID in there), the other 2 x 2.5" ones I just had left there from the previous laptop upgrades (first upgraded the 1 TB HDD by the 2 TB HDD and then replaced by a new 2 TB SSD).
+The 3 x 3.5" disks were taken from the original NAS box (were not in RAID in there), the other 2 x 2.5" ones I just had left there from the previous laptop upgrades (first upgraded the 1 TB HDD by the 2 TB HDD and then replaced by a new 2 TB SSD).
 
 In addition, the last 2 TB 2.5" is a [SMR drive](https://en.wikipedia.org/wiki/Shingled_magnetic_recording) (which is generally not great for the performance, event though it has a much larger cache, and was the main reason for upgrading it for the SSD in the laptop).
 
@@ -54,15 +54,15 @@ That means that at the end of the day the Silverstone case was able to incorpora
 {% capture notice_contents %}
 **<a name="caution">Word of caution</a>**:
 
-Combination of such variety of drives is **discouraged in general**, as each drive has different capabilities and speed (in particular, I expect the SMR drive to be a huge bottleneck).
+Combination of such variety of drives is **discouraged in general**, as each drive has different capabilities and speed (in particular, I expect the SMR drive to be the bottleneck).
 
 While it can be done and isn't even that difficult to setup, you need to **know what to expect** of such setup and what are its **limitations and dangers**.
 
 In particular, I'd **strongly discourage** to use such disk setup for **performance sensitive applications and frequently changing data**, like for example hosting databases or virtual machines.
 
-This solution also has somewhat **greater risk of a failure**, therefore I wouldn't recommend to use it for **critical data** that you absolutely cannot afford to lose.
+This solution also has somewhat **greater risk of failure**, therefore I wouldn't recommend to use it for **critical data** that you absolutely cannot afford to lose.
 
-In any case, very important data should be backed in multiple places anyway, ideally even in different physical locations - the **RAID-5/6 isn't an appropriate fail-safe backup option**, although preventing a data loss to some extent due to the redundancy.  
+In any case, very important data should be backed in multiple places anyway, ideally even in different physical locations - the **RAID-5/6 isn't an appropriate fail-safe backup option**, although preventing the data loss to some extent due to the redundancy.  
 For example, it doesn't prevent accidental deletion of files, virus/ransomware attacks, or even complete data loss in case of power surge, fire or similar incidents that are capable of destroying the entire machine.
 {% endcapture %}
 
