@@ -139,7 +139,7 @@ The 2 disk cages (4 disks each) have an additional 2.5" internal mount on the to
 I've spread the disk groups across the cages like this:
 
 |----------------------------+--------------------------|
-| SYSTEM: 750 GB ST2000LM015 | POOL-2: 2 TB ST2000LM015 |
+| SYSTEM: 750 GB ST9750420AS | POOL-2: 2 TB ST2000LM015 |
 |:---------------------------|:-------------------------|
 | POOL-2: 2 TB HD203WI       | POOL-1: 8 TB WD80EZAZ    |
 | POOL-1: 8 TB WD80EZAZ      | POOL-2: 1 TB WD10JPVX    |
