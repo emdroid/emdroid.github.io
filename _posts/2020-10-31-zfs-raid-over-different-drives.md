@@ -450,6 +450,38 @@ In addition, the RAIDZ actually allocates slightly more than one drive capacity 
 
 You can also refer to the [ZFS / RAIDZ Capacity Calculator](https://wintelguy.com/zfs-calc.pl) for calculating the ZFS RAID sizes and overhead.
 
+## 4. Speed comparison
+
+As mentioned, the new mixed drives group was expected to have the different performance characteristics than the primary 4 x 8 TB array.
+
+And this is indeed the case, clearly visible when the arrays were "scrubbed" (= verified for errors).
+
+When checking the scrub stats:
+
+```
+# the primary pool stats
+  pool: dpool
+ state: ONLINE
+  scan: scrub in progress since Sun Nov  8 00:24:02 2020
+        4.55T scanned at 1.02G/s, 2.45T issued at 559M/s, 8.30T total
+        0B repaired, 29.47% done, 0 days 03:02:56 to go
+...
+
+# the secondary pool stats
+  pool: xpool
+ state: ONLINE
+  scan: scrub in progress since Sun Nov  8 00:24:12 2020
+        1.50T scanned at 344M/s, 848G issued at 190M/s, 1.50T total
+        0B repaired, 55.10% done, 0 days 01:02:10 to go
+...
+```
+
+There the performance difference can be seen very clearly:
+- the **primary array** scrubbing at the rate of approx. **560 MB/s**
+- the **secondary array** rate being approx. **190 MB/s**
+
+Here in particular you can see, why joining these arrays together into a single pool (a common big volume) might not have been a great idea.
+
 ## Resources and references
 
 - [Shingled magnetic recording](https://en.wikipedia.org/wiki/Shingled_magnetic_recording)
