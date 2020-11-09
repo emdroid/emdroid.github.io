@@ -3,8 +3,6 @@ title: "ZFS RAID over different size drives"
 header:
   teaser: /assets/images/posts/zfs-pool.png
 toc: true
-sidebar:
-  nav: "fs-ares"
 categories:
   - Operating Systems
   - Linux
