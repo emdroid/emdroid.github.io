@@ -238,6 +238,8 @@ In my case this is for example (UEFI BIOS):
 - Advanced tab
 - APM Configuration
 
+**a) Restore state after the power loss**:
+
 The setting is usually something like **Restore Power On AC Loss**, in most cases these options are available:
 - _Power Off_: stay off after the AC restore (usually the default)
 - _Power On_: switch the computer on after the power is restored
@@ -246,13 +248,77 @@ The setting is usually something like **Restore Power On AC Loss**, in most case
 > **Last State** option:
 > - **recommended if available**
 > - will ensure that the machine will **start again in the case the power was lost while the computer was running**
-> - eventually you can also setup the **fallback wakeup timer** (most Bios implementations also support that)
+> - see the note below on restoring the RTC wake-up timer
 
 > **Power On** option:
 > - this way the computer will be **always started** when the power is lost and restored, thus ensuring it will not miss the schedule
 > - the downside is that it will be eventually started at the time where it normally wouldn't
 > - if waking up multiple computers like this, an **excess AC network spike** can happen (when all the computers are being switched on at once after the AC power is restored)
 > - that might eventually trigger the circuit breakers or fuses thus shutting the AC power down again
+
+**b) Fallback wake-up timer**:
+
+Most BIOS implementations, especially the newer ones (including the UEFI) usually allow to set a **wakeup timer for a particular time of day**.
+This can be used to ensure the machine is always woken up at last at this time.
+
+For example, if you setup your schedule to wake up the machine at 6pm on the week days via the rtcwake, you can set up the BIOS wake up timer to 6:30pm in addition to ensure the machine will be booted up if the scheduled RTC timer is missed for whatever reason.
+
+This in particular has the most sense **when using the "Last State"** AC power failure restore option, where the RTC timer could be lost eventually.
+See also bellow for additional notes.
+
+This can be usually found under "Wake Up On Time", "Resume By Alarm", "Power On By RTC" (on my UEFI server machine) etc.
+
+There you can setup the wake-up day (date of month, 0 usually meaning "every day" - read the BIOS help) and the time (hour:min:sec) options.
+
+Be careful in particular about your **UTC vs Local time** system setup (see later), as the UTC can lead to some confusion when setting up the timer.
+
+### 5.2. Restoring the RTC timer
+
+In my particular case (on my specific machine) I found out that with these options the scheduled **RTC timer is fully restored**:
+- **Restore Power On AC Loss**: _Last State_
+- **Power On By RTC**: _Enabled and time set_
+
+This means that after the AC power restore the machine will not switch on immediately, but **correctly according to the scheduled time** (as it was planned in the system, i.e. not just on the time configured in the BIOS).
+
+Note that this doesn't work (on my machine) when the BIOS RTC timer is not enabled and set (with just the "Last State" option) - **both options need to be set**.
+
+This could be BIOS implementation defined behavior, so you'd need to test this with your PC:
+- run the rtcwake schedule (disk or suspend-hybrid) with +5 mins to wake up
+- in between those 5 mins, disconnect the AC power cable, wait for couple of seconds and plug it back
+- wait to see whether the machine will wake up at the scheduled time
+- recommended to suspend to disk or hybrid (suspending just to RAM not recommended - the machine might still come up but the RAM contents will be gone)
+
+According to my experience this **does not work when using the "off" mode** (shutdown) - in that case the RTC timer is not restored and thus not woken up at the scheduled time, at least on my machine.
+
+### 5.3. UTC vs local BIOS time
+
+It is usually recommended for Linux to set the system clock to use the UTC BIOS time, except for dual-boot machines (Linux + Windows) where the local time is encouraged.
+
+However when you'll be setting up the wake-up timer in the BIOS, I would recommend to **use the local time** because of the following reasons:
+- **more convenient for setting up the timer** (don't need to re-calculate the current local time to UTC)
+- **UTC doesn't play well with DST changes**:
+  - you usually want to wake up the machine at the same local time of day
+  - that means that you'll need to change the BIOS wake-up timer on every DST change back and forth in case the time is in UTC
+  - unless your country doesn't do DST time switches (but still would need to recalculate the local time to UTC)
+  - note that you could still have the DST issue in case the machine is scheduled to sleep during the DST change (the BIOS current time will not be updated then)
+
+Checking the current UTC / local time status in Ubuntu:
+
+```bash
+timedatectl | grep local
+```
+
+Changing the current setup:
+
+```bash
+# use the BIOS local time
+timedatectl --adjust-system-clock set-local-rtc 1
+
+# use the BIOS UTC time
+timedatectl --adjust-system-clock set-local-rtc 0
+```
+
+Note that the "--adjust-system-clock" option can be used to adjust the time immediately.
 
 ## 6. Summary
 
@@ -262,10 +328,16 @@ The setting is usually something like **Restore Power On AC Loss**, in most case
    - works well with the "Last State" AC power loss option
 3. BIOS configuration:
    - use the "Last State" AC power loss option
+   - configure the "Wake-up Timer"
+   - these settings might allow to restore the RTC timer after the AC power restored
+4. Use local BIOS time:
+   - easier to use for the BIOS timers
+   - avoids DST switch issues (mostly)
 
 ## Resources and references
 
 - [man: rtcwake](https://linux.die.net/man/8/rtcwake)
 - [Ubuntu: Sleep & Wakeup Schedule](https://askubuntu.com/questions/1009684/sleep-wakeup-schedule-ubuntu-16-04-3-lts)
+- [Ubuntu: Bios Clock UTC setup](https://askubuntu.com/questions/720445/ubuntu-15-10-assumes-bios-clock-is-set-to-utc-time-regardless-of-utc-no-in-etc)
 
 {% include abbrev domain="computers" %}
