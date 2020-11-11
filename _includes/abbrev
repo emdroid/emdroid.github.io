@@ -46,6 +46,12 @@
 *[PCIe]: PCI-Express ("Peripheral Component Interconnect")
 *[SFF]: Small Form Factor
 
+*[BIOS]: Basic Input-Output system
+*[UEFI]: Unified Extensible Firmware Interface
+*[APM]: Advanced Power Management
+*[ACPI]: Advanced Configuration and Power Interface
+*[RTC]: Real-time clock
+
 *[LAN]: Local Area Network
 *[NIC]: Network card ("Network Interface Controller")
 
@@ -60,6 +66,7 @@
 *[WINS]: Network name resolution protocol ("Windows Internet Naming Service")
 
 *[PWM]: Pulse-Width Modulation
+*[AC]: Alternating Current
 *[DC]: Direct Current
 *[RPM]: Revolutions Per Minute
 
@@ -87,5 +94,9 @@
 *[SMART]: Self-Monitoring, Analysis, and Reporting Technology
 
 *[VM]: Virtual Machine
+
+*[UTC]: Coordinated Universal Time
+*[DST]: Daylight Saving Time
+*[GMT]: Greenwich Mean Time
 
 {% endif %}
