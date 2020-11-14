@@ -1249,7 +1249,7 @@ reboot
 
 In the next part we will complete the system disk setup (mirroring of the primary drive) and setup the data drives.
 
-[Next: Ubuntu Server on ZFS]({% post_url 2020-08-30-project-ares-part-5-ubuntu-on-zfs-raid %}){: .btn .btn--info}
+[Next: RAID and data drives]({% post_url 2020-08-30-project-ares-part-5-ubuntu-on-zfs-raid %}){: .btn .btn--info}
 {: .align-right}
 
 ## Resources and references
