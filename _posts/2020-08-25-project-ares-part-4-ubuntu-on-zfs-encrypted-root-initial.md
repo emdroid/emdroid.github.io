@@ -19,7 +19,7 @@ tags:
   - raid
 ---
 
-![NAS OS](/assets/images/posts/nas-ares/zol.png){: .align-center .img-large}
+![ZFS-on-Linux](/assets/images/posts/nas-ares/zol.png){: .align-center .img-large}
 
 Sharing the experience of building a home NAS/VM server.
 

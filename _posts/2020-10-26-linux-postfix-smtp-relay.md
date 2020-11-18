@@ -14,7 +14,7 @@ tags:
   - smtp
 ---
 
-![NAS OS](/assets/images/posts/email-delivery.png){: .align-center .img-large}
+![Postman](/assets/images/posts/email-delivery.png){: .align-center .img-large}
 
 Linux send-only postfix mailer SMTP relay configuration for error reporting and notifications.
 

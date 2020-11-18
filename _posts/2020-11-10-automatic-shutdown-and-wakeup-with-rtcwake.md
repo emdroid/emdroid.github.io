@@ -15,7 +15,7 @@ tags:
   - cron
 ---
 
-![NAS OS](/assets/images/posts/clock-pc.jpg){: .align-center .img-large}
+![Clock](/assets/images/posts/clock-pc.jpg){: .align-center .img-large}
 
 How to make a Linux PC shutdown and wake-up automatically at specific times.
 

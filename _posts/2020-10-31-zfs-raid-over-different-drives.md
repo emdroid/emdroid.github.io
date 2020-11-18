@@ -13,7 +13,7 @@ tags:
   - raid
 ---
 
-![NAS OS](/assets/images/posts/zfs-pool.png){: .align-center .img-large}
+![ZFS pool](/assets/images/posts/zfs-pool.png){: .align-center .img-large}
 
 Creating a ZFS RAID over different size drives (2 x 1 TB + 3 x 2 TB for 8 TB RAID-5 setup).
 This was done as part of the ["Project Ares" NAS box setup]({% post_url 2020-07-13-project-ares-part-1-choosing-the-hardware %}) for additional data storage.

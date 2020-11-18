@@ -17,7 +17,7 @@ tags:
   - smart
 ---
 
-![NAS OS](/assets/images/posts/nas-ares/system-monitor.png){: .align-center .img-large}
+![Monitoring](/assets/images/posts/nas-ares/system-monitor.png){: .align-center .img-large}
 
 Monitoring and reporting of disk health issues under Linux: SMART errors, temperatures, RAID failures.
 
