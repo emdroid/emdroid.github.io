@@ -19,7 +19,7 @@ tags:
   - truecrypt
 ---
 
-![NAS OS](/assets/images/posts/nas-ares/raid-5.png){: .align-center .img-large}
+![RAID-5](/assets/images/posts/nas-ares/raid-5.png){: .align-center .img-large}
 
 Sharing the experience of building a home NAS/VM server.
 
