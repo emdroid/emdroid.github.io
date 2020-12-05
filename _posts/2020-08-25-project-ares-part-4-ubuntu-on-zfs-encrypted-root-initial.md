@@ -1,5 +1,6 @@
 ---
 title: "Project Ares: Part IV - Ubuntu Server on ZFS (encrypted root)"
+last_modified_at: 2020-12-05
 header:
   teaser: /assets/images/posts/nas-ares/zol.png
 toc: true
@@ -26,6 +27,11 @@ Sharing the experience of building a home NAS/VM server.
 The part 4 describes the steps taken to install the chosen OS (Ubuntu Server 20.04 LTS) onto a LUKS encrypted ZFS root partition in RAID-1 (mirror) configuration.
 
 <!-- more -->
+
+> **Update {{ "December 5, 2020" | date_to_string }}**
+> 
+> Fixed the user dataset name.
+> The Ubuntu ZoL implementation uses the "_rpool/USERDATA_" dataset to add the new user home directories (not the "_rpool/USER_" the article used before).
 
 ## 1. Introduction
 
@@ -775,7 +781,7 @@ zfs create \
     -o canmount=off \
     -o mountpoint=none \
     -o setuid=off \
-    rpool/USER
+    rpool/USERDATA
 
 # mount the main data sets
 # (the order is important!)
@@ -835,7 +841,7 @@ zfs create \
     -o com.ubuntu.zsys:bootfs-datasets=rpool/ROOT/ubuntu \
     -o canmount=on \
     -o mountpoint=/root \
-    rpool/USER/root
+    rpool/USERDATA/root
 
 TARGET_USER=<admin-user>
 
@@ -843,7 +849,7 @@ zfs create \
     -o com.ubuntu.zsys:bootfs-datasets=rpool/ROOT/ubuntu \
     -o canmount=on \
     -o mountpoint=/home/$TARGET_USER \
-    rpool/USER/$TARGET_USER
+    rpool/USERDATA/$TARGET_USER
 
 # eventually repeat for each existing user
 # (check the original system for the user names and ids)
@@ -862,7 +868,7 @@ ls -al /target/home/
 
 - note that the original guides use additional UUID for the datasets, likely to be able to install multiple different versions, eventually a dual-boot; however I was installing only one system here, therefore I wasn't using the UUID part
 - the server dataset layout is following the Ubuntu recommendations [^7]
-- the main user dataset ("rpool/USER") could eventually also be on a separate zpool, if expecting larger USER dirs and putting them e.g. on separate data disks; for my project I don't expect to have much of user data so they are kept on the root pool
+- the main user dataset ("rpool/USERDATA") could eventually also be on a separate zpool, if expecting larger USER dirs and putting them e.g. on separate data disks; for my project I don't expect to have much of user data so they are kept on the root pool
 - we are creating separate dataset per user, which is the recommended setup [^8] (this allows to have per-user snapshots and also to remove the user dataset completely including the snapshots when the user is to be removed)
 {% endcapture %}
 
