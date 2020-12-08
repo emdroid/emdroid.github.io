@@ -107,7 +107,7 @@ To start installing the OS, we'll need to do some initial preparation:
 
 - [Ubuntu Desktop](https://ubuntu.com/download/desktop) Live DVD (needed for prep, moving to ZFS etc., eventually recovery)
 - [Ubuntu Legacy Server](http://cdimage.ubuntu.com/ubuntu-legacy-server/releases/20.04/release/) (minimal install) or any other release you want to install (can also be the Live DVD if you'd install the Desktop version)
-- alternatively can also use bootstrap a clean Ubuntu initial image (but I prefer to use the aforementioned Server image to have some basic setup done byt the installer)
+- alternatively can also bootstrap a clean Ubuntu initial image (but I prefer to use the aforementioned Server image to have some basic setup done by the installer)
 
 **Disks**:
 

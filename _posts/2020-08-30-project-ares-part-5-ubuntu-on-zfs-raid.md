@@ -603,7 +603,7 @@ zpool status dpool
 {% capture notice_contents %}
 **<a name="data_pool_note">Notes</a>**:
 
-- the array is created over the whole physical disks, which has some advantates for the ZFS maintenance
+- the array is created over the whole physical disks, which has some advantages for the ZFS maintenance
 (in particular, the ZFS subsystem can manage the disk itself, reportedly switching off the "standard" IO scheduler as it provides its own) [^8]
 - the ZFS subsystem still creates partitions over the disks, while leaving some small space at the end to accommodate for eventual slight disk size differences
 - the pool itself is not encrypted, the encryption will be done on the dataset level [^9]
